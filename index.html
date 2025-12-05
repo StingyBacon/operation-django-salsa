@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation: Django Salsa</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="landingPage" class="landing-page">
+        <h1>🤠 OPERATION: DJANGO SALSA 🕵️</h1>
+        <div class="subtitle">
+            Agent Wildflower 🌸 & The Onion Slayer 🧅
+        </div>
+
+        <div class="landing-briefing">
+            <h2>📜 OPERATION BRIEFING</h2>
+            <p><strong>Date:</strong> December 6, 2025</p>
+            <p><strong>Location:</strong> Agent Wildflower's Hideout → The Tilted Saloon</p>
+            <p>
+                Welcome to Operation Django Salsa—where western grit meets spy finesse. Tonight's mission is simple: 
+                create an unforgettable evening through tactical planning, spontaneous connection, and just the right 
+                amount of controlled chaos. Every objective completed brings you closer to legendary status.
+            </p>
+            <p>
+                <strong>Mission Timeline:</strong><br>
+                <strong>1700-1745:</strong> Rendezvous at the Hideout — welcome drinks, cooking nachos, setting up movie command center<br>
+                <strong>1745-2100:</strong> The Django Protocol — enjoy homemade nachos while watching the full 3-hour western epic<br>
+                <strong>2100-2115:</strong> Showdown at Sundown — witness the finale, share reactions, transition to next phase<br>
+                <strong>2115-2200:</strong> The Road to the Saloon — journey with conversation, wagers, and anticipation<br>
+                <strong>2200-Late:</strong> Infiltrating the Tilted Saloon — drinks, entertainment, and evening activities
+            </p>
+            <p style="color: #d4af37; font-style: italic;">
+                Score points through main objectives, mini-games, and side quests. Unlock secret challenges. 
+                Earn achievements. But remember: the real victory is the quality time spent together.
+            </p>
+        </div>
+
+        <button class="start-mission-btn" onclick="startMission()">🎯 INITIATE OPERATION</button>
+        
+        <div style="margin-top: 40px; text-align: center;">
+            <button class="btn" onclick="enterTestMode()" style="font-size: 11px; padding: 8px 20px; opacity: 0.7;">🔧 TEST MODE</button>
+        </div>
+    </div>
+
+    <div id="mainContent" class="container main-content">
+        <div class="header">
+            <h1>🤠 OPERATION: DJANGO SALSA 🕵️</h1>
+            <div class="codenames">
+                Agent Wildflower 🌸 & The Onion Slayer 🧅
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="clearSave()" style="font-size: 10px; padding: 5px 12px; opacity: 0.6;">🗑️ Clear Save</button>
+            </div>
+            <div id="testModeControls" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(74, 144, 226, 0.2); border-radius: 8px; border: 2px solid #4a90e2;">
+                <div style="font-size: 12px; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">🔧 TEST MODE CONTROLS</div>
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;">
+                    <button class="btn primary" id="toggleRestrictionsBtn" onclick="toggleTestRestrictions()" style="font-size: 10px; padding: 5px 12px;">🔓 Restrictions: OFF</button>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                    <input type="time" id="testTimeInput" style="padding: 5px; font-family: 'Courier New', monospace; font-size: 11px; border-radius: 5px; border: 1px solid #4a90e2; background: rgba(22, 33, 62, 0.8); color: #e8e8e8;">
+                    <button class="btn" onclick="setTestTime()" style="font-size: 10px; padding: 5px 12px;">⏰ Set Time</button>
+                    <button class="btn" onclick="clearTestTime()" style="font-size: 10px; padding: 5px 12px;">🔄 Reset Time</button>
+                </div>
+                <div id="currentTestTime" style="font-size: 10px; color: #888; margin-top: 8px; text-align: center;"></div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="level-markers" id="levelMarkers">
+                <div class="level-marker" style="left: 0%;">
+                    <div class="rank-label">🏅 Rookie</div>
+                    <div class="rank-points">0</div>
+                </div>
+                <div class="level-marker" style="left: 20%;">
+                    <div class="rank-label">🥉 Capable</div>
+                    <div class="rank-points">200</div>
+                </div>
+                <div class="level-marker" style="left: 40%;">
+                    <div class="rank-label">🥈 Skilled</div>
+                    <div class="rank-points">400</div>
+                </div>
+                <div class="level-marker" style="left: 60%;">
+                    <div class="rank-label">🥇 Elite</div>
+                    <div class="rank-points">600</div>
+                </div>
+                <div class="level-marker" style="left: 80%;">
+                    <div class="rank-label">💎 Master</div>
+                    <div class="rank-points">800</div>
+                </div>
+                <div class="level-marker" style="left: 100%;">
+                    <div class="rank-label">👑 Legendary</div>
+                    <div class="rank-points">1000</div>
+                </div>
+            </div>
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-text" id="progressText">0 / 1000 points</div>
+        </div>
+
+        <div class="scoring-system briefing collapsed" id="scoringSection">
+            <h3 onclick="toggleSection('scoringSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                ⚡ POINT SYSTEM
+                <span class="collapse-arrow">▼</span>
+            </h3>
+            <div class="briefing-content">
+                <ul>
+                    <li>Main Objective Completed: <strong style="color: #7cb342;">+100 points</strong></li>
+                    <li>Mini-Game Completed: <strong style="color: #4a90e2;">+30 points</strong></li>
+                    <li>Side Quest Completed: <strong style="color: #7cb342;">+20 points</strong></li>
+                    <li>Missed Main Objective: <strong style="color: #e74c3c;">-50 points</strong></li>
+                    <li>Reroll Penalty (cumulative): <strong style="color: #e74c3c;">-10, -20, -30 points</strong></li>
+                    <li>Secret Mission Completed: <strong style="color: #4a90e2;">+75 points</strong></li>
+                    <li>Secret Mission Failed: <strong style="color: #e74c3c;">-30 points</strong></li>
+                    <li>Midnight Mission Completed: <strong style="color: #9b59b6;">+40 points</strong></li>
+                </ul>
+                <div class="ranks-display">
+                    <strong style="color: #d4af37;">RANK THRESHOLDS:</strong><br>
+                    <div class="rank-item"><span class="rank-name">Rookie Recruits:</span> 0+ points</div>
+                    <div class="rank-item"><span class="rank-name">Capable Operatives:</span> 200+ points</div>
+                    <div class="rank-item"><span class="rank-name">Skilled Agents:</span> 400+ points</div>
+                    <div class="rank-item"><span class="rank-name">Elite Partners:</span> 600+ points</div>
+                    <div class="rank-item"><span class="rank-name">Master Spies:</span> 800+ points</div>
+                    <div class="rank-item"><span class="rank-name">Legendary Partners:</span> 1000+ points</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="missionsContainer"></div>
+
+        <div class="secret-mission-container collapsed" id="secretMissionSection">
+            <h3 onclick="toggleSection('secretMissionSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🔐 CLASSIFIED: SECRET MISSION
+                <span class="collapse-arrow" id="secret-arrow">▶</span>
+            </h3>
+            <div class="secret-content" id="secretContent">
+                <p style="font-size: 13px; margin-bottom: 15px; line-height: 1.5;">
+                    A secret phrase will unlock a covert operation. When spoken, the mission activates immediately. 
+                    Complete it within the time limit to earn bonus points.
+                </p>
+                <button class="btn primary" id="revealSecretBtn" onclick="revealSecretMission()">REVEAL SECRET MISSION</button>
+                <div id="secretMissionContent" class="hidden"></div>
+            </div>
+        </div>
+
+        <div class="midnight-missions-container collapsed" id="midnightContainer">
+            <h3 onclick="toggleSection('midnightContainer')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🌙 THE WITCHING HOUR CHALLENGES
+                <span class="collapse-arrow" id="midnight-arrow">▶</span>
+            </h3>
+            <div id="midnightContentWrapper">
+                <p style="font-size: 12px; color: #888; text-align: center; margin-bottom: 15px;">Special bonus missions - complete them all for maximum points!</p>
+                <div id="midnightContent">
+                <div class="midnight-progress">
+                    Completed: <span id="midnightProgress">0 / 10</span>
+                </div>
+                <div id="midnightMissionContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements-container collapsed" id="achievementsSection">
+            <h3 onclick="toggleSection('achievementsSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🏆 ACHIEVEMENTS
+                <span class="collapse-arrow" id="achievements-arrow">▶</span>
+            </h3>
+            <div id="achievementsWrapper">
+                <div id="achievementsContainer"></div>
+            </div>
+        </div>
+
+        <button class="btn primary finish-mission-btn" id="completeOperationBtn" onclick="finishMission()" disabled style="opacity: 0.5; cursor: not-allowed;">🤠 COMPLETE OPERATION: DJANGO SALSA 🕵️</button>
+
+        <div id="summaryScreenContainer" class="hidden"></div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
