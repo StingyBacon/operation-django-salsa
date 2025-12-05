@@ -1,0 +1,2326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operation: Django Salsa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e8e8e8;
+            padding: 15px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding-bottom: 50px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 2px solid #d4af37;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #d4af37;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .codenames {
+            font-size: 14px;
+            color: #c0c0c0;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            background: #2a2a3e;
+            border: 2px solid #d4af37;
+            border-radius: 10px;
+            height: 40px;
+            margin: 35px 0 30px 0;
+            position: relative;
+            overflow: visible;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #d4af37 0%, #ffd700 100%);
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            font-size: 14px;
+            z-index: 2;
+        }
+
+        .level-markers {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
+        }
+
+        .level-marker {
+            width: 2px;
+            background: rgba(255, 255, 255, 0.5);
+            height: 100%;
+            position: absolute;
+            z-index: 3;
+        }
+
+        .rank-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: #d4af37;
+            white-space: nowrap;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+            font-weight: bold;
+        }
+
+        .rank-points {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #888;
+            white-space: nowrap;
+        }
+
+        .briefing {
+            background: rgba(42, 42, 62, 0.9);
+            border: 2px solid #d4af37;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .briefing.collapsed {
+            padding: 15px 20px;
+        }
+
+        .briefing.collapsed .briefing-content {
+            display: none;
+        }
+
+        .briefing h2 {
+            color: #d4af37;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .briefing.collapsed h2 {
+            margin-bottom: 0;
+        }
+
+        .briefing h2:hover {
+            opacity: 0.8;
+        }
+
+        .collapse-arrow {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .briefing.collapsed .collapse-arrow {
+            transform: rotate(-90deg);
+        }
+
+        .briefing p {
+            line-height: 1.6;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .scoring-system {
+            background: rgba(42, 42, 62, 0.9);
+            border: 2px solid #8b4513;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .scoring-system h3 {
+            color: #d4af37;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .scoring-system ul {
+            list-style: none;
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        .scoring-system li {
+            padding-left: 15px;
+            position: relative;
+        }
+
+        .scoring-system li:before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: #d4af37;
+        }
+
+        .mission {
+            background: rgba(42, 42, 62, 0.95);
+            border: 2px solid #8b4513;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+        }
+
+        .mission.collapsed {
+            padding: 10px 15px;
+        }
+
+        .mission.collapsed .mission-content {
+            display: none;
+        }
+
+        .mission.faded {
+            opacity: 0.4;
+        }
+
+        .mission.hidden {
+            display: none;
+        }
+
+        .mission.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .mission.locked .mission-header {
+            cursor: not-allowed;
+        }
+
+        .mission.active {
+            border-color: #d4af37;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+        }
+
+        .mission-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #d4af37;
+            padding-bottom: 10px;
+            cursor: pointer;
+        }
+
+        .mission.collapsed .mission-header {
+            margin-bottom: 0;
+            border-bottom: none;
+        }
+
+        .mission-header:hover {
+            opacity: 0.8;
+        }
+
+        .mission-title {
+            color: #d4af37;
+            font-size: 16px;
+            font-weight: bold;
+            flex: 1;
+        }
+
+        .collapse-icon {
+            color: #d4af37;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .mission-lore {
+            background: rgba(22, 33, 62, 0.5);
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0 15px 0;
+            border-left: 3px solid #8b4513;
+            font-size: 12px;
+            line-height: 1.6;
+            font-style: italic;
+            color: #c0c0c0;
+        }
+
+        .mission-time {
+            color: #c0c0c0;
+            font-size: 12px;
+        }
+
+        .main-objective {
+            background: rgba(139, 69, 19, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #d4af37;
+        }
+
+        .main-objective h4 {
+            color: #d4af37;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .main-objective p {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .tasks-container {
+            margin: 15px 0;
+        }
+
+        .task {
+            background: rgba(22, 33, 62, 0.6);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #666;
+        }
+
+        .task.minigame {
+            border-left-color: #4a90e2;
+        }
+
+        .task.sidequest {
+            border-left-color: #7cb342;
+        }
+
+        .task.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+        }
+
+        .task-content {
+            flex: 1;
+            padding-right: 10px;
+        }
+
+        .task-label {
+            font-size: 10px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .task-description {
+            font-size: 13px;
+            margin-top: 5px;
+            line-height: 1.3;
+        }
+
+        .task-points {
+            color: #d4af37;
+            font-size: 12px;
+            margin-right: 10px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+            color: #fff;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #a0522d 0%, #8b4513 100%);
+            transform: scale(1.05);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .btn.danger {
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .complete-main-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 15px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .reroll-section {
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .reroll-info {
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .secret-mission-container {
+            background: rgba(15, 52, 96, 0.95);
+            border: 2px solid #4a90e2;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .secret-mission-container h3 {
+            color: #4a90e2;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .secret-content {
+            text-align: center;
+        }
+
+        .timer {
+            font-size: 24px;
+            color: #d4af37;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .timer.warning {
+            color: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .midnight-missions-container {
+            background: rgba(26, 26, 46, 0.95);
+            border: 2px solid #9b59b6;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .midnight-missions-container.collapsed #midnightContentWrapper,
+        .secret-mission-container.collapsed .secret-content,
+        .achievements-container.collapsed #achievementsWrapper {
+            display: none;
+        }
+
+        .midnight-missions-container.collapsed h3,
+        .secret-mission-container.collapsed h3,
+        .achievements-container.collapsed h3 {
+            margin-bottom: 0;
+        }
+
+        .midnight-missions-container.collapsed #midnightContentWrapper,
+        .secret-mission-container.collapsed .secret-content,
+        .achievements-container.collapsed #achievementsWrapper {
+            display: none;
+        }
+
+        .midnight-missions-container.collapsed h3,
+        .secret-mission-container.collapsed h3,
+        .achievements-container.collapsed h3 {
+            margin-bottom: 0;
+        }
+
+        .midnight-missions-container h3,
+        .secret-mission-container h3,
+        .achievements-container h3 {
+            cursor: pointer;
+        }
+
+        .midnight-missions-container h3:hover,
+        .secret-mission-container h3:hover,
+        .achievements-container h3:hover {
+            opacity: 0.8;
+        }
+
+        .midnight-missions-container.collapsed #midnightContentWrapper,
+        .secret-mission-container.collapsed .secret-content,
+        .achievements-container.collapsed #achievementsWrapper {
+            display: none;
+        }
+
+        .midnight-missions-container.collapsed h3,
+        .secret-mission-container.collapsed h3,
+        .achievements-container.collapsed h3 {
+            margin-bottom: 0;
+        }
+
+        .midnight-missions-container h3,
+        .secret-mission-container h3,
+        .achievements-container h3 {
+            cursor: pointer;
+        }
+
+        .midnight-missions-container h3:hover,
+        .secret-mission-container h3:hover,
+        .achievements-container h3:hover {
+            opacity: 0.8;
+        }
+
+        .secret-mission-container.section-locked,
+        .midnight-missions-container.section-locked,
+        .achievements-container.section-locked {
+            opacity: 0.6;
+        }
+
+        .secret-mission-container.section-locked h3,
+        .midnight-missions-container.section-locked h3,
+        .achievements-container.section-locked h3 {
+            cursor: not-allowed;
+        }
+
+        .secret-mission-container.section-locked h3:hover,
+        .midnight-missions-container.section-locked h3:hover,
+        .achievements-container.section-locked h3:hover {
+            opacity: 0.6;
+        }
+
+        .midnight-missions-container.locked {
+            opacity: 0.6;
+            position: relative;
+        }
+
+        .midnight-missions-container h3 {
+            color: #9b59b6;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .locked-overlay {
+            text-align: center;
+            padding: 20px;
+            color: #9b59b6;
+        }
+
+        .midnight-progress {
+            font-size: 12px;
+            color: #888;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .achievements-container {
+            background: rgba(42, 42, 62, 0.95);
+            border: 2px solid #7cb342;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .achievements-container h3 {
+            color: #7cb342;
+            font-size: 16px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .achievement {
+            background: rgba(22, 33, 62, 0.6);
+            padding: 10px;
+            border-radius: 6px;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            border-left: 3px solid #666;
+        }
+
+        .achievement.unlocked {
+            border-left-color: #7cb342;
+            background: rgba(124, 179, 66, 0.2);
+        }
+
+        .achievement-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+
+        .achievement-info {
+            flex: 1;
+        }
+
+        .achievement-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #d4af37;
+        }
+
+        .achievement-description {
+            font-size: 11px;
+            color: #888;
+            margin-top: 3px;
+        }
+
+        .final-score-container {
+            background: rgba(42, 42, 62, 0.95);
+            border: 3px solid #d4af37;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .final-score-container h2 {
+            color: #d4af37;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .score-display {
+            font-size: 48px;
+            color: #ffd700;
+            font-weight: bold;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .rank-display {
+            font-size: 24px;
+            color: #d4af37;
+            margin: 15px 0;
+        }
+
+        .reward-display {
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(139, 69, 19, 0.3);
+            border-radius: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #7cb342;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s ease;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .phase-indicator {
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .finish-date-btn {
+            width: 100%;
+            padding: 15px;
+            margin: 30px 0;
+            font-size: 16px;
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+        }
+
+        .summary-screen {
+            background: rgba(42, 42, 62, 0.98);
+            border: 3px solid #d4af37;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .summary-screen h2 {
+            color: #d4af37;
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-box {
+            background: rgba(22, 33, 62, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #8b4513;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            color: #d4af37;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #c0c0c0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .penalty-challenge-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .penalty-challenge-content {
+            background: rgba(42, 42, 62, 0.98);
+            border: 3px solid #e74c3c;
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .penalty-challenge-content h3 {
+            color: #e74c3c;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .penalty-challenge-content p {
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .challenge-timer {
+            font-size: 36px;
+            color: #d4af37;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .ranks-display {
+            background: rgba(22, 33, 62, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .rank-item {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+        }
+
+        .rank-item:last-child {
+            border-bottom: none;
+        }
+
+        .rank-name {
+            color: #d4af37;
+            font-weight: bold;
+        }
+
+        .task-info-box {
+            background: rgba(74, 144, 226, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #4a90e2;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .task-info-box strong {
+            color: #4a90e2;
+        }
+
+        .landing-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .landing-page h1 {
+            color: #d4af37;
+            font-size: 32px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.7);
+            margin-bottom: 20px;
+            animation: fadeInDown 1s ease;
+        }
+
+        .landing-page .subtitle {
+            color: #c0c0c0;
+            font-size: 16px;
+            margin-bottom: 40px;
+            animation: fadeIn 1.5s ease;
+        }
+
+        .landing-briefing {
+            background: rgba(42, 42, 62, 0.95);
+            border: 3px solid #d4af37;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 30px 0;
+            animation: fadeInUp 1s ease;
+        }
+
+        .landing-briefing h2 {
+            color: #d4af37;
+            font-size: 22px;
+            margin-bottom: 20px;
+        }
+
+        .landing-briefing p {
+            line-height: 1.8;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .start-mission-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #ffd700 100%);
+            color: #1a1a2e;
+            border: none;
+            padding: 20px 50px;
+            border-radius: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+            margin-top: 20px;
+        }
+
+        .start-mission-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.6);
+        }
+
+        .start-mission-btn:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            }
+            50% {
+                box-shadow: 0 6px 30px rgba(212, 175, 55, 0.7);
+            }
+        }
+
+        .main-content {
+            display: none;
+        }
+
+        .main-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div id="landingPage" class="landing-page">
+        <h1>🤠 OPERATION: DJANGO SALSA 🕵️</h1>
+        <div class="subtitle">
+            Agent Wildflower 🌸 & The Onion Slayer 🧅
+        </div>
+
+        <div class="landing-briefing">
+            <h2>📜 OPERATION BRIEFING</h2>
+            <p><strong>Date:</strong> December 6, 2025</p>
+            <p><strong>Location:</strong> Agent Wildflower's Hideout → The Tilted Saloon</p>
+            <p>
+                Welcome to Operation Django Salsa—where western grit meets spy finesse. Tonight's mission is simple: 
+                create an unforgettable evening through tactical planning, spontaneous connection, and just the right 
+                amount of controlled chaos. Every objective completed brings you closer to legendary status.
+            </p>
+            <p>
+                <strong>Mission Timeline:</strong><br>
+                <strong>1700-1745:</strong> Rendezvous at the Hideout — welcome drinks, cooking nachos, setting up movie command center<br>
+                <strong>1745-2100:</strong> The Django Protocol — enjoy homemade nachos while watching the full 3-hour western epic<br>
+                <strong>2100-2115:</strong> Showdown at Sundown — witness the finale, share reactions, transition to next phase<br>
+                <strong>2115-2200:</strong> The Road to the Saloon — journey with conversation, wagers, and anticipation<br>
+                <strong>2200-Late:</strong> Infiltrating the Tilted Saloon — drinks, entertainment, and evening activities
+            </p>
+            <p style="color: #d4af37; font-style: italic;">
+                Score points through main objectives, mini-games, and side quests. Unlock secret challenges. 
+                Earn achievements. But remember: the real victory is the quality time spent together.
+            </p>
+        </div>
+
+        <button class="start-mission-btn" onclick="startMission()">🎯 INITIATE OPERATION</button>
+        
+        <div style="margin-top: 40px; text-align: center;">
+            <button class="btn" onclick="enterTestMode()" style="font-size: 11px; padding: 8px 20px; opacity: 0.7;">🔧 TEST MODE</button>
+        </div>
+    </div>
+
+    <div id="mainContent" class="container main-content">
+        <div class="header">
+            <h1>🤠 OPERATION: DJANGO SALSA 🕵️</h1>
+            <div class="codenames">
+                Agent Wildflower 🌸 & The Onion Slayer 🧅
+            </div>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="clearSave()" style="font-size: 10px; padding: 5px 12px; opacity: 0.6;">🗑️ Clear Save</button>
+            </div>
+            <div id="testModeControls" class="hidden" style="margin-top: 15px; padding: 15px; background: rgba(74, 144, 226, 0.2); border-radius: 8px; border: 2px solid #4a90e2;">
+                <div style="font-size: 12px; color: #4a90e2; font-weight: bold; margin-bottom: 10px;">🔧 TEST MODE CONTROLS</div>
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; margin-bottom: 10px;">
+                    <button class="btn primary" id="toggleRestrictionsBtn" onclick="toggleTestRestrictions()" style="font-size: 10px; padding: 5px 12px;">🔓 Restrictions: OFF</button>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                    <input type="time" id="testTimeInput" style="padding: 5px; font-family: 'Courier New', monospace; font-size: 11px; border-radius: 5px; border: 1px solid #4a90e2; background: rgba(22, 33, 62, 0.8); color: #e8e8e8;">
+                    <button class="btn" onclick="setTestTime()" style="font-size: 10px; padding: 5px 12px;">⏰ Set Time</button>
+                    <button class="btn" onclick="clearTestTime()" style="font-size: 10px; padding: 5px 12px;">🔄 Reset Time</button>
+                </div>
+                <div id="currentTestTime" style="font-size: 10px; color: #888; margin-top: 8px; text-align: center;"></div>
+            </div>
+        </div>
+
+        <div class="progress-bar">
+            <div class="level-markers" id="levelMarkers">
+                <div class="level-marker" style="left: 0%;">
+                    <div class="rank-label">🏅 Rookie</div>
+                    <div class="rank-points">0</div>
+                </div>
+                <div class="level-marker" style="left: 20%;">
+                    <div class="rank-label">🥉 Capable</div>
+                    <div class="rank-points">200</div>
+                </div>
+                <div class="level-marker" style="left: 40%;">
+                    <div class="rank-label">🥈 Skilled</div>
+                    <div class="rank-points">400</div>
+                </div>
+                <div class="level-marker" style="left: 60%;">
+                    <div class="rank-label">🥇 Elite</div>
+                    <div class="rank-points">600</div>
+                </div>
+                <div class="level-marker" style="left: 80%;">
+                    <div class="rank-label">💎 Master</div>
+                    <div class="rank-points">800</div>
+                </div>
+                <div class="level-marker" style="left: 100%;">
+                    <div class="rank-label">👑 Legendary</div>
+                    <div class="rank-points">1000</div>
+                </div>
+            </div>
+            <div class="progress-fill" id="progressFill"></div>
+            <div class="progress-text" id="progressText">0 / 1000 points</div>
+        </div>
+
+        <div class="scoring-system briefing collapsed" id="scoringSection">
+            <h3 onclick="toggleSection('scoringSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                ⚡ POINT SYSTEM
+                <span class="collapse-arrow">▼</span>
+            </h3>
+            <div class="briefing-content">
+                <ul>
+                    <li>Main Objective Completed: <strong style="color: #7cb342;">+100 points</strong></li>
+                    <li>Mini-Game Completed: <strong style="color: #4a90e2;">+30 points</strong></li>
+                    <li>Side Quest Completed: <strong style="color: #7cb342;">+20 points</strong></li>
+                    <li>Missed Main Objective: <strong style="color: #e74c3c;">-50 points</strong></li>
+                    <li>Reroll Penalty (cumulative): <strong style="color: #e74c3c;">-10, -20, -30 points</strong></li>
+                    <li>Secret Mission Completed: <strong style="color: #4a90e2;">+75 points</strong></li>
+                    <li>Secret Mission Failed: <strong style="color: #e74c3c;">-30 points</strong></li>
+                    <li>Midnight Mission Completed: <strong style="color: #9b59b6;">+40 points</strong></li>
+                </ul>
+                <div class="ranks-display">
+                    <strong style="color: #d4af37;">RANK THRESHOLDS:</strong><br>
+                    <div class="rank-item"><span class="rank-name">Rookie Recruits:</span> 0+ points</div>
+                    <div class="rank-item"><span class="rank-name">Capable Operatives:</span> 200+ points</div>
+                    <div class="rank-item"><span class="rank-name">Skilled Agents:</span> 400+ points</div>
+                    <div class="rank-item"><span class="rank-name">Elite Partners:</span> 600+ points</div>
+                    <div class="rank-item"><span class="rank-name">Master Spies:</span> 800+ points</div>
+                    <div class="rank-item"><span class="rank-name">Legendary Partners:</span> 1000+ points</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="missionsContainer"></div>
+
+        <div class="secret-mission-container collapsed" id="secretMissionSection">
+            <h3 onclick="toggleSection('secretMissionSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🔐 CLASSIFIED: SECRET MISSION
+                <span class="collapse-arrow" id="secret-arrow">▶</span>
+            </h3>
+            <div class="secret-content" id="secretContent">
+                <p style="font-size: 13px; margin-bottom: 15px; line-height: 1.5;">
+                    A secret phrase will unlock a covert operation. When spoken, the mission activates immediately. 
+                    Complete it within the time limit to earn bonus points.
+                </p>
+                <button class="btn primary" id="revealSecretBtn" onclick="revealSecretMission()">REVEAL SECRET MISSION</button>
+                <div id="secretMissionContent" class="hidden"></div>
+            </div>
+        </div>
+
+        <div class="midnight-missions-container collapsed" id="midnightContainer">
+            <h3 onclick="toggleSection('midnightContainer')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🌙 THE WITCHING HOUR CHALLENGES
+                <span class="collapse-arrow" id="midnight-arrow">▶</span>
+            </h3>
+            <div id="midnightContentWrapper">
+                <p style="font-size: 12px; color: #888; text-align: center; margin-bottom: 15px;">Special bonus missions - complete them all for maximum points!</p>
+                <div id="midnightContent">
+                <div class="midnight-progress">
+                    Completed: <span id="midnightProgress">0 / 10</span>
+                </div>
+                <div id="midnightMissionContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="achievements-container collapsed" id="achievementsSection">
+            <h3 onclick="toggleSection('achievementsSection')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                🏆 ACHIEVEMENTS
+                <span class="collapse-arrow" id="achievements-arrow">▶</span>
+            </h3>
+            <div id="achievementsWrapper">
+                <div id="achievementsContainer"></div>
+            </div>
+        </div>
+
+        <button class="btn primary finish-date-btn" id="completeOperationBtn" onclick="finishDate()" disabled style="opacity: 0.5; cursor: not-allowed;">🤠 COMPLETE OPERATION: DJANGO SALSA 🕵️</button>
+
+        <div id="summaryScreenContainer" class="hidden"></div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            totalScore: 0,
+            rerollsUsed: 0,
+            missionRerolls: {}, // Track rerolls per mission
+            testMode: false,
+            testModeTime: null, // Override time for testing (format: 'HH:MM')
+            testModeRestrictionsDisabled: true, // Start with restrictions disabled in test mode
+            secretMissionRevealed: false,
+            secretMissionActive: false,
+            midnightMissionsCompleted: 0,
+            achievements: [],
+            completedMainObjectives: 0,
+            completedMiniGames: 0,
+            completedSideQuests: 0,
+            missedMainObjectives: 0,
+            penaltyChallengesCompleted: 0,
+            penaltyChallengeFailed: 0,
+            dateStartTime: new Date(),
+            secretMissionCompleted: false,
+            secretMissionFailed: false
+        };
+
+        // Save game state to localStorage
+        function saveGameState() {
+            const saveData = {
+                gameState: gameState,
+                completedTasks: [],
+                completedMainObjectives: [],
+                missedPenalties: []
+            };
+            
+            // Save all completed tasks
+            document.querySelectorAll('.task.completed').forEach(task => {
+                saveData.completedTasks.push(task.id);
+            });
+            
+            // Save main objective completion status
+            document.querySelectorAll('.mission').forEach(mission => {
+                if (mission.dataset.mainCompleted === 'true') {
+                    saveData.completedMainObjectives.push(mission.id);
+                }
+                if (mission.dataset.missedPenaltyApplied === 'true') {
+                    saveData.missedPenalties.push(mission.id);
+                }
+            });
+            
+            // Save achievements unlock status
+            saveData.unlockedAchievements = achievements.filter(a => a.unlocked).map(a => a.id);
+            
+            localStorage.setItem('operationDjangoSalsa', JSON.stringify(saveData));
+        }
+
+        // Load game state from localStorage
+        function loadGameState() {
+            const saved = localStorage.getItem('operationDjangoSalsa');
+            if (!saved) return false;
+            
+            try {
+                const saveData = JSON.parse(saved);
+                
+                // Restore game state
+                Object.assign(gameState, saveData.gameState);
+                gameState.dateStartTime = new Date(gameState.dateStartTime);
+                
+                // Wait for DOM to be ready, then restore UI state
+                setTimeout(() => {
+                    // Restore completed tasks
+                    saveData.completedTasks.forEach(taskId => {
+                        const task = document.getElementById(taskId);
+                        if (task) {
+                            task.classList.add('completed');
+                            const btn = task.querySelector('.btn');
+                            if (btn) btn.disabled = true;
+                        }
+                    });
+                    
+                    // Restore main objectives
+                    saveData.completedMainObjectives.forEach(missionId => {
+                        const mission = document.getElementById(missionId);
+                        if (mission) {
+                            mission.dataset.mainCompleted = 'true';
+                            const btn = document.getElementById(`main-btn-${missionId.replace('mission-', '')}`);
+                            if (btn) {
+                                btn.disabled = true;
+                                btn.textContent = '✓ COMPLETED';
+                            }
+                        }
+                    });
+                    
+                    // Restore missed penalties
+                    saveData.missedPenalties.forEach(missionId => {
+                        const mission = document.getElementById(missionId);
+                        if (mission) mission.dataset.missedPenaltyApplied = 'true';
+                    });
+                    
+                    // Restore achievements
+                    saveData.unlockedAchievements.forEach(achId => {
+                        const achievement = achievements.find(a => a.id === achId);
+                        if (achievement) {
+                            achievement.unlocked = true;
+                            const el = document.getElementById(`achievement-${achId}`);
+                            if (el) el.classList.add('unlocked');
+                        }
+                    });
+                    
+                    // Update progress bar and reroll counters
+                    updateProgressBar();
+                    Object.keys(gameState.missionRerolls).forEach(missionId => {
+                        const counter = document.getElementById(`reroll-count-${missionId}`);
+                        if (counter) counter.textContent = `${gameState.missionRerolls[missionId]}/3`;
+                    });
+                    
+                    // Restore midnight missions progress
+                    const midnightProgress = document.getElementById('midnightProgress');
+                    if (midnightProgress) {
+                        midnightProgress.textContent = `${gameState.midnightMissionsCompleted} / 10`;
+                    }
+                    if (gameState.midnightMissionsCompleted < 10) {
+                        loadNextMidnightMission();
+                    }
+                    
+                    // Restore secret mission state
+                    if (gameState.secretMissionRevealed && !gameState.secretMissionCompleted && !gameState.secretMissionFailed) {
+                        const revealBtn = document.getElementById('revealSecretBtn');
+                        if (revealBtn) revealBtn.classList.add('hidden');
+                        // Secret mission timer would have expired, so mark as failed
+                        gameState.secretMissionActive = false;
+                        gameState.secretMissionFailed = true;
+                        const content = document.getElementById('secretMissionContent');
+                        if (content) {
+                            content.classList.remove('hidden');
+                            content.innerHTML = '<p style="color: #e74c3c; font-size: 14px;">✗ SECRET MISSION TIME EXPIRED!</p>';
+                        }
+                    } else if (gameState.secretMissionCompleted) {
+                        const revealBtn = document.getElementById('revealSecretBtn');
+                        if (revealBtn) revealBtn.classList.add('hidden');
+                        const content = document.getElementById('secretMissionContent');
+                        if (content) {
+                            content.classList.remove('hidden');
+                            content.innerHTML = '<p style="color: #7cb342; font-size: 14px;">✓ SECRET MISSION COMPLETED! +75 POINTS</p>';
+                        }
+                    }
+                }, 100);
+                
+                return true;
+            } catch (e) {
+                console.error('Failed to load save:', e);
+                return false;
+            }
+        }
+
+        // Clear save data
+        function clearSave() {
+            if (confirm('Are you sure you want to clear all saved progress?')) {
+                localStorage.removeItem('operationDjangoSalsa');
+                location.reload();
+            }
+        }
+
+        // Databases
+        const missions = [
+            {
+                id: 1,
+                title: "MISSION 1: Rendezvous at the Hideout",
+                timeRange: "17:00 - 17:45",
+                startTime: "17:00",
+                endTime: "17:45",
+                lore: "As the sun begins its descent over the frontier, The Onion Slayer makes his way to Agent Wildflower's hideout. Intel suggests that the best operations begin with proper provisions. The kitchen becomes your first battleground—not against enemies, but against hunger. Success here sets the tone for the entire operation.",
+                mainObjectives: [
+                    "Greet your partner with a proper welcome drink and give the full headquarters tour",
+                    "Cook together while catching up on the week's adventures and mishaps",
+                    "Transform the living room into the ultimate movie command center with snacks and cozy setup"
+                ],
+                miniGames: [
+                    "Both predict which Django character will be the other's favorite—reveal after the movie",
+                    "Invent a signature spy handshake that you'll use throughout the night",
+                    "Capture a candid 'agents in action' photo while cooking—most natural wins",
+                    "Speed chopping contest: who can prep vegetables fastest without shedding tears",
+                    "Blind taste test: guess the secret ingredient your partner added to the guacamole"
+                ],
+                sideQuests: [
+                    "Tell each other about the best part of your day today",
+                    "Play a song from your playlist and explain why you love it",
+                    "Teach your partner a cooking trick or kitchen hack they don't know",
+                    "Give a genuine compliment about something you've noticed recently",
+                    "Share your most ridiculous food craving right now",
+                    "Recreate a funny moment from the past week with dramatic reenactment",
+                    "Ask about their dream home-cooked meal"
+                ]
+            },
+            {
+                id: 2,
+                title: "MISSION 2: The Django Protocol",
+                timeRange: "17:45 - 21:00",
+                startTime: "17:45",
+                endTime: "21:00",
+                lore: "The preparation is complete, and now it's time to enjoy the fruits of your labor. As you settle in with your homemade feast, the real mission begins: building connection over food while starting your cinematic journey. Django Unchained awaits—all 3 hours of western glory. This is where the operation transforms from preparation to experience.",
+                mainObjectives: [
+                    "Start Django Unchained and enjoy your homemade nachos together during the first act",
+                    "Get fully immersed in the movie while savoring the meal you created",
+                    "Balance watching, eating, and natural conversation during the film"
+                ],
+                miniGames: [
+                    "Try to recreate a dramatic Django pose from the poster before starting",
+                    "Predict what the movie's opening scene will be—closest guess wins bragging rights",
+                    "Rate your own nachos out of 10 and defend your score",
+                    "See who can quote more westerns before Django even starts",
+                    "Make up a ridiculous western-style nickname for each other"
+                ],
+                sideQuests: [
+                    "Toast to a successful evening before the first bite",
+                    "Share your first impression of the movie's opening",
+                    "Pause to discuss your favorite meal you've ever shared together",
+                    "Compliment the chef (both of you) on specific dish elements",
+                    "Predict your favorite Django character based on the opening",
+                    "Take a photo of your nacho masterpiece before devouring it",
+                    "Share what you're most looking forward to about the rest of the night"
+                ]
+            },
+            {
+                id: 3,
+                title: "MISSION 3: Showdown at Sundown",
+                timeRange: "21:00 - 21:15",
+                startTime: "21:00",
+                endTime: "21:15",
+                lore: "The climax approaches. Django's final showdown is here, and you've been on this journey together for three hours. Now comes the satisfying conclusion—both of the film and this phase of your operation. How you react to the ending and transition to the next phase will test your adaptability as partners.",
+                mainObjectives: [
+                    "Watch Django's epic finale together and see the movie through to the end",
+                    "Share your immediate reactions and favorite moments from the film",
+                    "Successfully transition from movie mode to adventure mode for the next phase"
+                ],
+                miniGames: [
+                    "Try to quote a Django line together in unison—bonus points for matching delivery",
+                    "Predict what happens next in the scene—wrong guess means taking a sip of your drink",
+                    "Create a western movie bingo: spot gunfights, standoffs, saloons, horses, revenge plots",
+                    "Both attempt your best cowboy drawl—rate each other's authenticity out of 10",
+                    "Keep a running tally: count every time someone says 'Django' throughout the movie"
+                ],
+                sideQuests: [
+                    "Verbally react to a plot twist—don't hold back your genuine surprise",
+                    "Take a strategic snack break and discuss favorite moments so far",
+                    "Listen as your partner explains what makes this movie special to them",
+                    "Debate which Tarantino film reigns supreme and defend your choice",
+                    "Plan your next movie date—pick the film and the menu",
+                    "Exchange movie recommendations you've been meaning to share",
+                    "Discuss your all-time favorite movie villain and why they're so compelling",
+                    "Share a scene that reminds you of something in your own life"
+                ]
+            },
+            {
+                id: 4,
+                title: "MISSION 4: The Road to the Saloon",
+                timeRange: "21:15 - 22:00",
+                startTime: "21:15",
+                endTime: "22:00",
+                lore: "The journey between safe houses is where many operations fall apart. Not from danger, but from boredom. True agents know that transit time is an opportunity—for conversation, for connection, for preparing mentally for the challenges ahead. The Tilted Saloon awaits, but the path there is just as important as the destination.",
+                mainObjectives: [
+                    "Make the journey to The Tilted Saloon while keeping the conversation flowing",
+                    "Discuss your competitive gaming strategy and make friendly wagers",
+                    "Arrive at The Tilted Saloon energized and ready for arcade challenges"
+                ],
+                miniGames: [
+                    "Play the classic game: 20 Questions about anything from childhood memories to wild hypotheticals",
+                    "Pick a stranger and collaboratively invent their entire life story—be creative",
+                    "People-watch together: guess if couples are on first dates, married, or just friends",
+                    "Confess your most awkward social moment from the last 30 days",
+                    "Try to predict which arcade game the other person will dominate at tonight"
+                ],
+                sideQuests: [
+                    "Capture a transit selfie that shows your excitement for the night ahead",
+                    "Place a friendly wager on who'll win more arcade games—loser buys next date's dessert",
+                    "Share the most interesting fact or idea you encountered this week",
+                    "Start planning your next adventure together—where and when",
+                    "Give a specific, thoughtful compliment about something you admire",
+                    "Scout for the most eye-catching fashion choice you see tonight",
+                    "Reminisce about your childhood arcade experiences and favorite games"
+                ]
+            },
+            {
+                id: 5,
+                title: "MISSION 5: Infiltrating the Tilted Saloon",
+                timeRange: "22:00 - LATE",
+                startTime: "22:00",
+                endTime: "23:59",
+                lore: "The Tilted Saloon: a den of lights, sounds, and competition. Here, agents test their reflexes, their luck, and their ability to handle defeat gracefully. Every game is a challenge. Every challenge is an opportunity to learn something new about your partner. In this neon-lit establishment, legends are born—or at least, high scores are achieved.",
+                mainObjectives: [
+                    "Compete in at least 5 different arcade games—track victories if you're feeling competitive",
+                    "Order themed drinks befitting your spy personas and toast to the successful operation",
+                    "Achieve victory (or a valiant effort) in at least one game together or against each other"
+                ],
+                miniGames: [
+                    "Establish stakes: whoever loses each round buys the winner's next drink",
+                    "Team up to defeat a high score on any machine—cooperation over competition",
+                    "If you're feeling bold, challenge another couple or group to a friendly game-off",
+                    "Alternate picking games and provide commentary on each other's selections",
+                    "Choreograph a signature victory celebration to perform after every win"
+                ],
+                sideQuests: [
+                    "Step outside your comfort zone and order something completely new from the menu",
+                    "Assess the atmosphere: does this place give 'Western Saloon' or 'Secret Agent Hideout' energy?",
+                    "Uncover your partner's unexpected gaming superpower—what are they secretly amazing at?",
+                    "Capture a memorable photo together at the bar with your drinks",
+                    "Locate the most absurd or obscure game in the entire venue",
+                    "Share where in the world you'd most like to travel and why",
+                    "Discreetly identify which couples around you are clearly on a first date",
+                    "Be adventurous: play something neither of you have ever tried before"
+                ]
+            }
+        ];
+
+        const secretMissions = [
+            {
+                task: "Say 'The Django needs saving' and maintain eye contact for 5 seconds without laughing",
+                timeLimit: 5,
+                points: 75
+            },
+            {
+                task: "Both order drinks in character as 'Agent Wildflower' and 'The Onion Slayer'—the bartender must not break character",
+                timeLimit: 8,
+                points: 75
+            },
+            {
+                task: "Find a way to reference 'nachos' in conversation with a stranger at the bar naturally",
+                timeLimit: 10,
+                points: 75
+            },
+            {
+                task: "Take a photo where you're both doing dramatic spy poses without explaining why to anyone nearby",
+                timeLimit: 3,
+                points: 75
+            },
+            {
+                task: "Challenge each other to a quick dance-off right where you are (minimum 15 seconds each)",
+                timeLimit: 2,
+                points: 75
+            }
+        ];
+
+        const midnightMissions = [
+            { task: "High-five at exactly midnight (or as close as possible)", points: 40 },
+            { task: "Convince a stranger you're both undercover agents on a mission", points: 40 },
+            { task: "Order the weirdest drink combination and both take a sip", points: 40 },
+            { task: "Find someone named 'Nick' or 'Nicole' and tell them they share a name with a spy", points: 40 },
+            { task: "Get a stranger to take a photo of you both in 'spy poses'", points: 40 },
+            { task: "Start a conga line (minimum 3 people)", points: 40 },
+            { task: "Compliment 5 different people in under 5 minutes", points: 40 },
+            { task: "Both drink something while making intense eye contact for 10 seconds", points: 40 },
+            { task: "Discover and remember the bartender's name, then use it 3 times", points: 40 },
+            { task: "Create a secret signal and use it every time you want to kiss for the rest of the night", points: 40 }
+        ];
+
+        const penaltyChallenges = [
+            { task: "Share 3 things you appreciate about each other right now", timeLimit: 2 },
+            { task: "Take a silly photo together and show it to a stranger for their rating", timeLimit: 3 },
+            { task: "Come up with a 30-second story about your 'spy origins' together", timeLimit: 2 },
+            { task: "Do 10 synchronized jumping jacks together", timeLimit: 1 },
+            { task: "Find something that makes both of you laugh within 2 minutes", timeLimit: 2 },
+            { task: "Compliment each other using only western/spy terminology", timeLimit: 2 },
+            { task: "Create a secret handshake right now", timeLimit: 2 },
+            { task: "Guess each other's favorite movie snack - both must be correct", timeLimit: 1 }
+        ];
+
+        const achievements = [
+            { id: "perfectionist", title: "Perfect Precision", description: "Complete all objectives in one mission", icon: "⭐", unlocked: false },
+            { id: "speedster", title: "Lightning Quick", description: "Complete a mission's main objective in the first half of its time window", icon: "⚡", unlocked: false },
+            { id: "social", title: "Social Butterfly", description: "Complete 5 side quests", icon: "🦋", unlocked: false },
+            { id: "competitor", title: "Game Master", description: "Complete 5 mini-games", icon: "🎮", unlocked: false },
+            { id: "witching", title: "Night Owl", description: "Complete all 10 Witching Hour Challenges", icon: "🌙", unlocked: false },
+            { id: "classified", title: "Classified Intel", description: "Successfully complete the Secret Mission", icon: "🔐", unlocked: false },
+            { id: "flawless", title: "Flawless Execution", description: "Don't miss any main objectives", icon: "💎", unlocked: false },
+            { id: "dedication", title: "Dedicated Agents", description: "Reach the 'Legendary Partners' rank", icon: "👑", unlocked: false }
+        ];
+
+        const ranks = [
+            { minScore: 0, name: "Rookie Recruits", description: "You showed up! That's what counts... mostly. Maybe practice your spy skills before the next mission?", reward: "🎖️ Participation Badge & A pat on the back" },
+            { minScore: 200, name: "Capable Operatives", description: "Not bad for a night's work. You've got potential, and there's definitely room for improvement in future operations.", reward: "🥉 Bronze Star & Right to plan the next date" },
+            { minScore: 400, name: "Skilled Agents", description: "Now we're talking! You two work well together as a team, and the missions proved it.", reward: "🥈 Silver Badge & Dessert of your choice next time" },
+            { minScore: 600, name: "Elite Partners", description: "Impressive! You're not just good—you're dangerously good. This operation could be classified as 'highly successful.'", reward: "🥇 Gold Medal & Planning privileges for 2 future dates" },
+            { minScore: 800, name: "Master Spies", description: "Exceptional work, agents! You've mastered the art of teamwork and mission execution. Future operations eagerly awaited.", reward: "💎 Diamond Commendation & Automatic veto power on next date idea" },
+            { minScore: 1000, name: "Legendary Partners", description: "🏆 PERFECT SCORE! You've achieved the impossible. This operation will go down in spy-western history.", reward: "👑 Legendary Status, Lifetime Bragging Rights & Victory celebration" }
+        ];
+
+        // Initialize missions
+        function initializeMissions() {
+            const container = document.getElementById('missionsContainer');
+            container.innerHTML = '';
+
+            missions.forEach(mission => {
+                // Randomly select objectives
+                const mainObj = mission.mainObjectives[Math.floor(Math.random() * mission.mainObjectives.length)];
+                const selectedMiniGames = shuffleArray(mission.miniGames).slice(0, 3);
+                const selectedSideQuests = shuffleArray(mission.sideQuests).slice(0, Math.floor(Math.random() * 3) + 2);
+
+                const missionEl = createMissionElement(mission, mainObj, selectedMiniGames, selectedSideQuests);
+                container.appendChild(missionEl);
+            });
+
+            initializeAchievements();
+            checkMidnightMissions(); // Initialize midnight missions immediately
+            startMissionTracking();
+        }
+
+        function createMissionElement(mission, mainObj, miniGames, sideQuests) {
+            const div = document.createElement('div');
+            div.className = 'mission';
+            div.id = `mission-${mission.id}`;
+            div.dataset.startTime = mission.startTime;
+            div.dataset.endTime = mission.endTime;
+            div.dataset.mainCompleted = 'false';
+
+            // Initialize rerolls for this mission
+            if (!gameState.missionRerolls[mission.id]) {
+                gameState.missionRerolls[mission.id] = 0;
+            }
+
+            let html = `
+                <div class="mission-header" onclick="toggleMission(${mission.id})">
+                    <div class="mission-title">${mission.title}</div>
+                    <div class="mission-time">${mission.timeRange}</div>
+                    <div class="collapse-icon" id="collapse-icon-${mission.id}">▼</div>
+                </div>
+                <div class="mission-content" id="content-${mission.id}">
+                    <div class="phase-indicator" id="phase-${mission.id}">Ready</div>
+                    <div class="mission-lore">${mission.lore}</div>
+                    <div class="main-objective">
+                        <h4>🎯 MAIN OBJECTIVE</h4>
+                        <p>${mainObj}</p>
+                    </div>
+                    <div class="tasks-container" id="tasks-${mission.id}">
+            `;
+
+            // Mini-games
+            miniGames.forEach((game, idx) => {
+                html += `
+                    <div class="task minigame" id="mini-${mission.id}-${idx}">
+                        <div class="task-content">
+                            <div class="task-label">Mini-Game</div>
+                            <div class="task-description">${game}</div>
+                        </div>
+                        <div class="task-points">+30</div>
+                        <button class="btn" onclick="completeTask('mini', ${mission.id}, ${idx})">COMPLETE</button>
+                    </div>
+                `;
+            });
+
+            // Side quests
+            sideQuests.forEach((quest, idx) => {
+                html += `
+                    <div class="task sidequest" id="side-${mission.id}-${idx}">
+                        <div class="task-content">
+                            <div class="task-label">Side Quest</div>
+                            <div class="task-description">${quest}</div>
+                        </div>
+                        <div class="task-points">+20</div>
+                        <button class="btn" onclick="completeTask('side', ${mission.id}, ${idx})">COMPLETE</button>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                    <div class="reroll-section">
+                        <button class="btn" onclick="rerollMission(${mission.id})">🎲 REROLL TASKS <span id="reroll-penalty-${mission.id}">(-10 pts)</span></button>
+                        <div class="reroll-info">Rerolls used: <span id="reroll-count-${mission.id}">0/3</span></div>
+                    </div>
+                    <button class="btn primary complete-main-btn" id="main-btn-${mission.id}" 
+                            onclick="completeMainObjective(${mission.id})">
+                        ✓ COMPLETE MAIN OBJECTIVE (+100)
+                    </button>
+                </div>
+            `;
+
+            div.innerHTML = html;
+            return div;
+        }
+
+        function toggleMission(missionId) {
+            const missionEl = document.getElementById(`mission-${missionId}`);
+            const icon = document.getElementById(`collapse-icon-${missionId}`);
+            
+            // Check if mission is locked (has 'locked' class)
+            if (missionEl.classList.contains('locked')) {
+                showNotification('Mission locked until start time', 'error');
+                return;
+            }
+            
+            // Don't allow collapsing if collapsed and still locked
+            if (missionEl.classList.contains('collapsed') && missionEl.classList.contains('locked')) {
+                showNotification('Mission locked until start time', 'error');
+                return;
+            }
+            
+            missionEl.classList.toggle('collapsed');
+            icon.textContent = missionEl.classList.contains('collapsed') ? '▶' : '▼';
+        }
+
+        function toggleSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            
+            // Check if section is locked
+            if (section.classList.contains('section-locked')) {
+                showNotification('Locked until Mission 1 starts', 'error');
+                return;
+            }
+            
+            section.classList.toggle('collapsed');
+            
+            // Update arrow for these specific sections
+            let arrowId = null;
+            if (sectionId === 'secretMissionSection') arrowId = 'secret-arrow';
+            else if (sectionId === 'midnightContainer') arrowId = 'midnight-arrow';
+            else if (sectionId === 'achievementsSection') arrowId = 'achievements-arrow';
+            
+            if (arrowId) {
+                const arrow = document.getElementById(arrowId);
+                if (arrow) {
+                    arrow.textContent = section.classList.contains('collapsed') ? '▼' : '▲';
+                }
+            }
+        }
+
+        function completeTask(type, missionId, taskIdx) {
+            const taskEl = document.getElementById(`${type}-${missionId}-${taskIdx}`);
+            if (taskEl.classList.contains('completed')) return;
+
+            taskEl.classList.add('completed');
+            const points = type === 'mini' ? 30 : 20;
+            addScore(points);
+            
+            if (type === 'mini') {
+                gameState.completedMiniGames++;
+            } else {
+                gameState.completedSideQuests++;
+            }
+
+            checkAchievements(missionId);
+            showNotification(`+${points} points!`);
+            saveGameState();
+        }
+
+        function completeMainObjective(missionId) {
+            const missionEl = document.getElementById(`mission-${missionId}`);
+            if (missionEl.dataset.mainCompleted === 'true') return;
+
+            missionEl.dataset.mainCompleted = 'true';
+            const btn = document.getElementById(`main-btn-${missionId}`);
+            btn.disabled = true;
+            btn.textContent = '✓ COMPLETED';
+            
+            addScore(100);
+            gameState.completedMainObjectives++;
+            
+            checkAchievements(missionId);
+            showNotification('+100 points! Main objective complete! 🎯');
+            
+            // Auto-collapse the mission after a brief delay
+            setTimeout(() => {
+                if (!missionEl.classList.contains('collapsed')) {
+                    toggleMission(missionId);
+                }
+            }, 1500);
+            
+            saveGameState();
+        }
+
+        function rerollMission(missionId) {
+            const missionRerolls = gameState.missionRerolls[missionId] || 0;
+            
+            if (missionRerolls >= 3) {
+                alert('Maximum rerolls reached for this mission!');
+                return;
+            }
+
+            const mission = missions.find(m => m.id === missionId);
+            const tasksContainer = document.getElementById(`tasks-${missionId}`);
+            const currentTasks = Array.from(tasksContainer.querySelectorAll('.task:not(.completed)'));
+            
+            if (currentTasks.length === 0) {
+                alert('No tasks left to reroll!');
+                return;
+            }
+
+            // Remove random non-completed task
+            const randomTask = currentTasks[Math.floor(Math.random() * currentTasks.length)];
+            const isMiniGame = randomTask.classList.contains('minigame');
+            
+            // Get new task
+            const availableTasks = isMiniGame ? mission.miniGames : mission.sideQuests;
+            const newTask = availableTasks[Math.floor(Math.random() * availableTasks.length)];
+            
+            // Replace task
+            randomTask.querySelector('.task-description').textContent = newTask;
+            randomTask.classList.remove('completed');
+
+            // Apply penalty
+            gameState.missionRerolls[missionId]++;
+            gameState.rerollsUsed++; // Track total rerolls for summary
+            const penalty = gameState.missionRerolls[missionId] * 10;
+            addScore(-penalty);
+            
+            document.getElementById(`reroll-count-${missionId}`).textContent = `${gameState.missionRerolls[missionId]}/3`;
+            
+            // Update penalty display for next reroll
+            const nextPenalty = (gameState.missionRerolls[missionId] + 1) * 10;
+            const penaltySpan = document.getElementById(`reroll-penalty-${missionId}`);
+            if (penaltySpan && gameState.missionRerolls[missionId] < 3) {
+                penaltySpan.textContent = `(-${nextPenalty} pts)`;
+            }
+            
+            showNotification(`Task rerolled! -${penalty} points`);
+            saveGameState();
+        }
+
+        function revealSecretMission() {
+            if (gameState.secretMissionRevealed) return;
+
+            const secretMission = secretMissions[Math.floor(Math.random() * secretMissions.length)];
+            gameState.secretMissionRevealed = true;
+            gameState.secretMissionActive = true;
+
+            const content = document.getElementById('secretMissionContent');
+            const revealBtn = document.getElementById('revealSecretBtn');
+            
+            revealBtn.classList.add('hidden');
+            content.classList.remove('hidden');
+            
+            content.innerHTML = `
+                <div style="background: rgba(74, 144, 226, 0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;">${secretMission.task}</p>
+                    <div class="timer" id="secretTimer">${secretMission.timeLimit}:00</div>
+                    <button class="btn primary" onclick="completeSecretMission()">COMPLETE SECRET MISSION (+75)</button>
+                </div>
+            `;
+
+            startSecretTimer(secretMission.timeLimit);
+            showNotification('Secret mission activated! ⏰');
+        }
+
+        function startSecretTimer(minutes) {
+            let timeLeft = minutes * 60;
+            const timerEl = document.getElementById('secretTimer');
+            
+            const interval = setInterval(() => {
+                if (!gameState.secretMissionActive) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 30) {
+                    timerEl.classList.add('warning');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    failSecretMission();
+                }
+            }, 1000);
+        }
+
+        function completeSecretMission() {
+            if (!gameState.secretMissionActive) return;
+
+            gameState.secretMissionActive = false;
+            gameState.secretMissionCompleted = true;
+            addScore(75);
+            unlockAchievement('classified');
+            
+            const content = document.getElementById('secretMissionContent');
+            content.innerHTML = '<p style="color: #7cb342; font-size: 14px;">✓ SECRET MISSION COMPLETED! +75 POINTS</p>';
+            
+            showNotification('Secret mission complete! Well done, agents! 🔐');
+        }
+
+        function failSecretMission() {
+            if (!gameState.secretMissionActive) return;
+
+            gameState.secretMissionActive = false;
+            gameState.secretMissionFailed = true;
+            
+            const content = document.getElementById('secretMissionContent');
+            content.innerHTML = '<p style="color: #e74c3c; font-size: 14px;">✗ SECRET MISSION TIME EXPIRED!</p>';
+            
+            showPenaltyChallenge('secret', 30);
+        }
+
+        function showPenaltyChallenge(type, originalPenalty) {
+            const challenge = penaltyChallenges[Math.floor(Math.random() * penaltyChallenges.length)];
+            
+            const modal = document.createElement('div');
+            modal.className = 'penalty-challenge-modal';
+            modal.id = 'penaltyModal';
+            
+            modal.innerHTML = `
+                <div class="penalty-challenge-content">
+                    <h3>⚠️ PENALTY CHALLENGE</h3>
+                    <p>You failed the objective! Complete this challenge to reduce the penalty from <strong>-${originalPenalty}</strong> to <strong>-${Math.floor(originalPenalty * 0.6)}</strong> points.</p>
+                    <div style="background: rgba(22, 33, 62, 0.6); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <p style="font-size: 14px; color: #d4af37;">${challenge.task}</p>
+                    </div>
+                    <div class="challenge-timer" id="challengeTimer">${challenge.timeLimit}:00</div>
+                    <button class="btn primary" onclick="completePenaltyChallenge(${originalPenalty})">✓ COMPLETED CHALLENGE</button>
+                    <button class="btn danger" style="margin-top: 10px;" onclick="skipPenaltyChallenge(${originalPenalty})">SKIP (FULL PENALTY)</button>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            startChallengeTimer(challenge.timeLimit, originalPenalty);
+        }
+
+        function startChallengeTimer(minutes, penalty) {
+            let timeLeft = minutes * 60;
+            const timerEl = document.getElementById('challengeTimer');
+            
+            const interval = setInterval(() => {
+                const modal = document.getElementById('penaltyModal');
+                if (!modal) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                timerEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    skipPenaltyChallenge(penalty);
+                }
+            }, 1000);
+        }
+
+        function completePenaltyChallenge(originalPenalty) {
+            const reducedPenalty = Math.floor(originalPenalty * 0.6);
+            addScore(-reducedPenalty);
+            gameState.penaltyChallengesCompleted++;
+            
+            const modal = document.getElementById('penaltyModal');
+            if (modal) modal.remove();
+            
+            showNotification(`Challenge complete! Penalty reduced to -${reducedPenalty} points!`);
+        }
+
+        function skipPenaltyChallenge(penalty) {
+            addScore(-penalty);
+            gameState.penaltyChallengeFailed++;
+            
+            const modal = document.getElementById('penaltyModal');
+            if (modal) modal.remove();
+            
+            showNotification(`Full penalty applied: -${penalty} points`);
+        }
+
+        function startMissionTracking() {
+            // Check every minute
+            setInterval(() => {
+                updateMissionStates();
+                checkMidnightMissions();
+            }, 60000);
+            
+            // Initial check
+            updateMissionStates();
+            checkMidnightMissions();
+        }
+
+        function updateMissionStates() {
+            const now = new Date();
+            const currentTime = gameState.testModeTime || `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            // Check if Mission 1 has started to unlock other sections
+            const mission1 = missions[0];
+            const mission1Started = currentTime >= mission1.startTime;
+            const sectionsToUnlock = ['secretMissionSection', 'midnightContainer', 'achievementsSection'];
+            
+            sectionsToUnlock.forEach(sectionId => {
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    if (mission1Started || (gameState.testMode && gameState.testModeRestrictionsDisabled)) {
+                        const wasLocked = section.classList.contains('section-locked');
+                        section.classList.remove('section-locked');
+                        // Only uncollapse when first unlocking (transitioning from locked to unlocked)
+                        if (wasLocked && section.classList.contains('collapsed')) {
+                            section.classList.remove('collapsed');
+                            const arrowIds = {'secretMissionSection': 'secret-arrow', 'midnightContainer': 'midnight-arrow', 'achievementsSection': 'achievements-arrow'};
+                            const arrow = document.getElementById(arrowIds[sectionId]);
+                            if (arrow) arrow.textContent = '▼';
+                        }
+                    } else {
+                        section.classList.add('section-locked');
+                        // Keep collapsed when locked
+                        if (!section.classList.contains('collapsed')) {
+                            section.classList.add('collapsed');
+                            const arrowIds = {'secretMissionSection': 'secret-arrow', 'midnightContainer': 'midnight-arrow', 'achievementsSection': 'achievements-arrow'};
+                            const arrow = document.getElementById(arrowIds[sectionId]);
+                            if (arrow) arrow.textContent = '▶';
+                        }
+                    }
+                }
+            });
+
+            // Control the complete operation button
+            const completeBtn = document.getElementById('completeOperationBtn');
+            if (completeBtn) {
+                if (mission1Started || (gameState.testMode && gameState.testModeRestrictionsDisabled)) {
+                    completeBtn.disabled = false;
+                    completeBtn.style.opacity = '1';
+                    completeBtn.style.cursor = 'pointer';
+                } else {
+                    completeBtn.disabled = true;
+                    completeBtn.style.opacity = '0.5';
+                    completeBtn.style.cursor = 'not-allowed';
+                }
+            }
+
+            missions.forEach(mission => {
+                const missionEl = document.getElementById(`mission-${mission.id}`);
+                const phaseEl = document.getElementById(`phase-${mission.id}`);
+                const mainBtn = document.getElementById(`main-btn-${mission.id}`);
+
+                // In test mode with restrictions disabled, all missions are always active
+                if (gameState.testMode && gameState.testModeRestrictionsDisabled) {
+                    missionEl.classList.remove('faded', 'hidden');
+                    missionEl.classList.add('active');
+                    if (phaseEl) {
+                        phaseEl.textContent = '🔧 TEST MODE - ACTIVE';
+                        phaseEl.style.color = '#4a90e2';
+                    }
+                    return;
+                }
+
+                if (currentTime >= mission.startTime && currentTime < mission.endTime) {
+                    // Mission is active
+                    const wasLocked = missionEl.classList.contains('locked');
+                    missionEl.classList.remove('faded', 'hidden', 'locked');
+                    missionEl.classList.add('active');
+                    // Uncollapse when mission becomes active (only if it was locked before)
+                    if (wasLocked && missionEl.classList.contains('collapsed')) {
+                        missionEl.classList.remove('collapsed');
+                        const collapseIcon = document.getElementById(`collapse-icon-${mission.id}`);
+                        if (collapseIcon) collapseIcon.textContent = '▼';
+                    }
+                    if (phaseEl) {
+                        phaseEl.textContent = '⚡ ACTIVE NOW';
+                        phaseEl.style.color = '#d4af37';
+                    }
+                } else if (currentTime >= mission.endTime) {
+                    // Mission time has passed
+                    missionEl.classList.remove('active', 'hidden', 'locked');
+                    missionEl.classList.add('faded');
+                    if (phaseEl) {
+                        phaseEl.textContent = '✓ Time Window Closed';
+                        phaseEl.style.color = '#888';
+                    }
+                    
+                    // Check if main objective was completed
+                    if (missionEl.dataset.mainCompleted === 'true') {
+                        // Mission completed - collapse it
+                        if (!missionEl.classList.contains('collapsed')) {
+                            toggleMission(mission.id);
+                        }
+                    } else {
+                        // Mission not completed - mark as missed and disable all incomplete buttons
+                        if (!missionEl.dataset.missedPenaltyApplied) {
+                            gameState.missedMainObjectives++;
+                            showPenaltyChallenge('missed', 50);
+                            missionEl.dataset.missedPenaltyApplied = 'true';
+                        }
+                        
+                        // Disable the main objective button if not completed
+                        if (mainBtn && !mainBtn.disabled) {
+                            mainBtn.disabled = true;
+                            mainBtn.textContent = '✗ TIME EXPIRED';
+                            mainBtn.style.opacity = '0.3';
+                        }
+                        
+                        // Disable all incomplete task buttons
+                        const tasks = missionEl.querySelectorAll('.task:not(.completed) .btn');
+                        tasks.forEach(btn => {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.3';
+                        });
+                    }
+                } else {
+                    // Mission is in the future - show collapsed and locked
+                    missionEl.classList.remove('active', 'faded', 'hidden');
+                    missionEl.classList.add('locked', 'collapsed');
+                    const collapseIcon = document.getElementById(`collapse-icon-${mission.id}`);
+                    if (collapseIcon) collapseIcon.textContent = '▶';
+                    if (phaseEl) {
+                        phaseEl.textContent = '🔒 Locked until ' + mission.startTime;
+                        phaseEl.style.color = '#666';
+                    }
+                }
+            });
+        }
+
+        function finishDate() {
+            const dateEndTime = new Date();
+            const dateDuration = Math.floor((dateEndTime - gameState.dateStartTime) / 1000 / 60); // minutes
+            
+            // Calculate final rank
+            const currentRank = ranks.reduce((acc, rank) => 
+                gameState.totalScore >= rank.minScore ? rank : acc
+            );
+
+            // Count total possible objectives
+            const totalMainObjectives = missions.length;
+            const totalUnlockedAchievements = achievements.filter(a => a.unlocked).length;
+
+            const summaryContainer = document.getElementById('summaryScreenContainer');
+            summaryContainer.classList.remove('hidden');
+            
+            summaryContainer.innerHTML = `
+                <div class="summary-screen">
+                    <h2>🎯 OPERATION SUMMARY</h2>
+                    
+                    <div class="score-display">${gameState.totalScore}</div>
+                    <div class="rank-display" style="font-size: 20px; color: #d4af37; margin: 15px 0;">${currentRank.name}</div>
+                    <div style="font-size: 13px; line-height: 1.6; padding: 12px; background: rgba(139, 69, 19, 0.2); border-radius: 8px; margin: 10px 0; font-style: italic;">
+                        ${currentRank.description}
+                    </div>
+                    <div class="reward-display" style="font-size: 14px; line-height: 1.6; padding: 15px; background: rgba(212, 175, 55, 0.2); border-radius: 8px; margin: 15px 0; border: 2px solid #d4af37;">
+                        <strong style="color: #d4af37;">🎁 YOUR REWARD:</strong><br>
+                        ${currentRank.reward}
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value">${gameState.completedMainObjectives}</div>
+                            <div class="stat-label">Main Objectives</div>
+                            <div style="font-size: 10px; color: #888; margin-top: 5px;">of ${totalMainObjectives}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${gameState.completedMiniGames}</div>
+                            <div class="stat-label">Mini-Games</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${gameState.completedSideQuests}</div>
+                            <div class="stat-label">Side Quests</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${gameState.midnightMissionsCompleted}</div>
+                            <div class="stat-label">Midnight Missions</div>
+                            <div style="font-size: 10px; color: #888; margin-top: 5px;">of 10</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${totalUnlockedAchievements}</div>
+                            <div class="stat-label">Achievements</div>
+                            <div style="font-size: 10px; color: #888; margin-top: 5px;">of ${achievements.length}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value">${gameState.rerollsUsed}</div>
+                            <div class="stat-label">Rerolls Used</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(22, 33, 62, 0.6); padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 13px; line-height: 1.8;">
+                        <strong style="color: #d4af37;">ADDITIONAL STATS:</strong><br>
+                        ⏱️ Date Duration: ~${dateDuration} minutes<br>
+                        ${gameState.secretMissionCompleted ? '✓ Secret Mission: Completed (+75 pts)' : gameState.secretMissionFailed ? '✗ Secret Mission: Failed' : '— Secret Mission: Not Attempted'}<br>
+                        ${gameState.completedMainObjectives === totalMainObjectives ? '✓ All Main Objectives Completed!' : gameState.missedMainObjectives > 0 ? `⚠️ Missed Main Objectives: ${gameState.missedMainObjectives}` : `📊 Main Objectives: ${gameState.completedMainObjectives}/${totalMainObjectives}`}<br>
+                        ${gameState.penaltyChallengesCompleted > 0 ? `💪 Penalty Challenges Won: ${gameState.penaltyChallengesCompleted}` : ''}<br>
+                        ${gameState.penaltyChallengeFailed > 0 ? `❌ Penalty Challenges Failed: ${gameState.penaltyChallengeFailed}` : ''}
+                    </div>
+
+                    <div style="text-align: center; padding: 20px; border-top: 2px solid #d4af37; margin-top: 20px;">
+                        <p style="font-size: 14px; line-height: 1.6; color: #c0c0c0; font-style: italic;">
+                            "Every mission has an end, but the best partnerships are just beginning. Until the next operation, agents." 🤠🕵️
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            // Scroll to summary
+            summaryContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function checkMidnightMissions() {
+            const now = new Date();
+            let currentHour = now.getHours();
+            
+            // Use test mode time if set
+            if (gameState.testModeTime) {
+                currentHour = parseInt(gameState.testModeTime.split(':')[0]);
+            }
+            
+            const container = document.getElementById('midnightContainer');
+            const content = document.getElementById('midnightContent');
+            
+            if ((gameState.testMode && gameState.testModeRestrictionsDisabled) || currentHour === 23) {
+                // Midnight missions are unlocked (23:00-23:59)
+                container.classList.remove('locked');
+                if (gameState.midnightMissionsCompleted < 10) {
+                    if (document.getElementById('midnightMissionContent').children.length === 0) {
+                        loadNextMidnightMission();
+                    }
+                }
+            } else {
+                // Midnight missions are locked
+                container.classList.add('locked');
+                content.innerHTML = '<div class="locked-overlay"><p>🔒 LOCKED UNTIL 23:00</p><p style="font-size: 11px; margin-top: 10px;">These challenges will unlock at 23:00 for one hour</p></div>';
+            }
+        }
+
+        function loadNextMidnightMission() {
+            if (gameState.midnightMissionsCompleted >= 10) {
+                document.getElementById('midnightMissionContent').innerHTML = 
+                    '<p style="color: #7cb342; text-align: center; padding: 20px;">🎉 ALL WITCHING HOUR CHALLENGES COMPLETED!</p>';
+                unlockAchievement('witching');
+                return;
+            }
+
+            const mission = midnightMissions[gameState.midnightMissionsCompleted];
+            const content = document.getElementById('midnightMissionContent');
+            
+            content.innerHTML = `
+                <div style="background: rgba(155, 89, 182, 0.2); padding: 15px; border-radius: 8px; margin: 10px 0;">
+                    <p style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;">${mission.task}</p>
+                    <button class="btn primary" onclick="completeMidnightMission()">COMPLETE (+${mission.points})</button>
+                </div>
+            `;
+        }
+
+        function completeMidnightMission() {
+            const mission = midnightMissions[gameState.midnightMissionsCompleted];
+            addScore(mission.points);
+            gameState.midnightMissionsCompleted++;
+            
+            document.getElementById('midnightProgress').textContent = `${gameState.midnightMissionsCompleted} / 10`;
+            
+            showNotification(`Midnight mission complete! +${mission.points} points 🌙`);
+            
+            setTimeout(() => loadNextMidnightMission(), 500);
+            saveGameState();
+        }
+
+        function initializeAchievements() {
+            const container = document.getElementById('achievementsContainer');
+            container.innerHTML = '';
+
+            achievements.forEach(achievement => {
+                const div = document.createElement('div');
+                div.className = 'achievement';
+                div.id = `achievement-${achievement.id}`;
+                
+                div.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <div class="achievement-info">
+                        <div class="achievement-title">${achievement.title}</div>
+                        <div class="achievement-description">${achievement.description}</div>
+                    </div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+
+        function unlockAchievement(achievementId) {
+            const achievement = achievements.find(a => a.id === achievementId);
+            if (!achievement || achievement.unlocked) return;
+
+            achievement.unlocked = true;
+            const el = document.getElementById(`achievement-${achievementId}`);
+            el.classList.add('unlocked');
+            
+            showNotification(`🏆 Achievement Unlocked: ${achievement.title}!`);
+            saveGameState();
+        }
+
+        function checkAchievements(missionId) {
+            // Check perfectionist
+            const missionEl = document.getElementById(`mission-${missionId}`);
+            const allTasks = missionEl.querySelectorAll('.task');
+            const completedTasks = missionEl.querySelectorAll('.task.completed');
+            const mainCompleted = missionEl.dataset.mainCompleted === 'true';
+
+            if (allTasks.length === completedTasks.length && mainCompleted) {
+                unlockAchievement('perfectionist');
+            }
+
+            // Check social butterfly
+            if (gameState.completedSideQuests >= 5) {
+                unlockAchievement('social');
+            }
+
+            // Check game master
+            if (gameState.completedMiniGames >= 5) {
+                unlockAchievement('competitor');
+            }
+
+            // Check flawless execution
+            if (gameState.completedMainObjectives === missions.length) {
+                unlockAchievement('flawless');
+            }
+
+            // Check legendary lovers
+            if (gameState.totalScore >= 1000) {
+                unlockAchievement('dedication');
+            }
+        }
+
+        function addScore(points) {
+            gameState.totalScore += points;
+            updateProgressBar();
+            saveGameState();
+        }
+
+        function updateProgressBar() {
+            const maxScore = 1000;
+            const percentage = Math.min((gameState.totalScore / maxScore) * 100, 100);
+            
+            document.getElementById('progressFill').style.width = `${percentage}%`;
+            document.getElementById('progressText').textContent = `${gameState.totalScore} / ${maxScore} points`;
+
+            // Update rank in real-time
+            const currentRank = ranks.reduce((acc, rank) => 
+                gameState.totalScore >= rank.minScore ? rank : acc
+            );
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            if (type === 'error') {
+                notification.style.background = '#e74c3c';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        function enterTestMode() {
+            const password = prompt('Enter test mode password:');
+            if (password === 'Echo') {
+                gameState.testMode = true;
+                alert('Test mode activated! All missions and challenges are accessible. You can also override the time of day.');
+                startMission();
+                // Show test mode controls
+                document.getElementById('testModeControls').classList.remove('hidden');
+            } else if (password !== null) {
+                alert('Incorrect password.');
+            }
+        }
+
+        function setTestTime() {
+            const timeInput = document.getElementById('testTimeInput').value;
+            if (timeInput) {
+                gameState.testModeTime = timeInput;
+                document.getElementById('currentTestTime').textContent = `⏰ Simulating time: ${timeInput}`;
+                updateMissionStates();
+                checkMidnightMissions();
+                showNotification(`Time set to ${timeInput}`);
+            }
+        }
+
+        function clearTestTime() {
+            gameState.testModeTime = null;
+            document.getElementById('currentTestTime').textContent = '';
+            document.getElementById('testTimeInput').value = '';
+            updateMissionStates();
+            checkMidnightMissions();
+            showNotification('Using real time');
+        }
+
+        function toggleTestRestrictions() {
+            gameState.testModeRestrictionsDisabled = !gameState.testModeRestrictionsDisabled;
+            const btn = document.getElementById('toggleRestrictionsBtn');
+            
+            if (gameState.testModeRestrictionsDisabled) {
+                btn.textContent = '🔓 Restrictions: OFF';
+                btn.classList.add('primary');
+                showNotification('Time restrictions disabled - all content accessible');
+            } else {
+                btn.textContent = '🔒 Restrictions: ON';
+                btn.classList.remove('primary');
+                showNotification('Time restrictions enabled - testing time-based features');
+            }
+            
+            updateMissionStates();
+            checkMidnightMissions();
+        }
+
+        function startMission() {
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('mainContent').classList.add('active');
+            // Initialize missions after starting
+            initializeMissions();
+            // Try to load saved game
+            const loaded = loadGameState();
+            if (loaded) {
+                showNotification('Progress restored! 💾');
+            }
+        }
+
+        // Initialize on load - but don't start missions yet
+        window.onload = () => {
+            // Landing page is shown by default
+        };
+    </script>
+</body>
+</html>
