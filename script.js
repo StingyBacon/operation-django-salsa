@@ -1,6 +1,28 @@
+// Firebase Configuration (using compat for simplicity)
+const firebaseConfig = {
+  apiKey: "AIzaSyCP-rfhssg2yKG56Sn6RD7J-QLbbqFWNEU",
+  authDomain: "operation-django-salsa.firebaseapp.com",
+  databaseURL: "https://operation-django-salsa-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "operation-django-salsa",
+  storageBucket: "operation-django-salsa.firebasestorage.app",
+  messagingSenderId: "107903419934",
+  appId: "1:107903419934:web:248398c05ab7f61020100f"
+};
+
+// Firebase sync state
+let firebaseApp = null;
+let database = null;
+let sessionRef = null;
+let syncEnabled = false;
+let sessionCode = null;
+let isHost = false;
+
 // Game State
 let gameState = {
+    gameMode: null, // 'coop' or 'versus'
     totalScore: 0,
+    player1Score: 0,
+    player2Score: 0,
     rerollsUsed: 0,
     missionRerolls: {}, // Track rerolls per mission
     testMode: false,
@@ -138,6 +160,10 @@ function loadGameState() {
             
             // Update progress bar and reroll counters
             updateProgressBar();
+            updateModeDisplay();
+            if (gameState.gameMode === 'versus') {
+                updateVersusScores();
+            }
             Object.keys(gameState.missionRerolls).forEach(missionId => {
                 const counter = document.getElementById(`reroll-count-${missionId}`);
                 if (counter) counter.textContent = `${gameState.missionRerolls[missionId]}/3`;
@@ -1247,7 +1273,269 @@ const achievements = [
     { id: "classified", title: "Classified Intel", description: "Successfully complete the Secret Mission", icon: "🔐", unlocked: false },
     { id: "flawless", title: "Flawless Execution", description: "Don't miss any main objectives", icon: "💎", unlocked: false },
     { id: "dedication", title: "Dedicated Agents", description: "Reach the 'Legendary Partners' rank", icon: "👑", unlocked: false },
+    { id: "teamwork", title: "Perfect Teamwork", description: "Win Co-op Mode with max score", icon: "🤝", unlocked: false, mode: "coop" },
+    { id: "champion", title: "Undisputed Champion", description: "Win Versus Mode by 300+ points", icon: "🏆", unlocked: false, mode: "versus" },
     { id: "hidden", title: "???", description: "Complete the operation to reveal", icon: "❓", unlocked: false, hidden: true, realTitle: "Partners in Crime", realDescription: "Completed Operation Django Salsa together", realIcon: "🤝" }
+];
+
+// Mode-specific mini games
+const coopMiniGames = {
+    1: [
+        "Both predict which Django character will be the other's favorite—reveal after the movie (30 pts if both correct)",
+        "Invent a signature spy handshake together and demonstrate it perfectly (30 pts)",
+        "Capture a candid 'agents in action' photo while cooking—both approve it (30 pts)",
+        "Speed teamwork: one chops, one stirs, swap roles midway without dropping pace (30 pts)",
+        "Blind taste test: both identify the secret ingredient your partner added (30 pts)"
+    ],
+    2: [
+        "Both recreate the same Django pose in unison without planning (30 pts)",
+        "Predict the movie's opening together and both be within 2 minutes (30 pts)",
+        "Agree on a nacho rating and both defend it to an imaginary food critic (30 pts)",
+        "Work together to quote 5 different westerns before Django starts (30 pts)",
+        "Create matching western-style nicknames that both love (30 pts)"
+    ],
+    3: [
+        "Quote a Django line together in perfect unison (30 pts)",
+        "Both predict the same next event in the scene (30 pts)",
+        "Complete western movie bingo together—get 5 in a row as a team (30 pts)",
+        "Practice and perform matching cowboy drawls in sync (30 pts)",
+        "Both keep the same Django count throughout—within 2 of each other (30 pts)"
+    ],
+    4: [
+        "Play 20 Questions—both guess correctly in under 10 questions (30 pts)",
+        "Collaborate to create the most entertaining stranger backstory (30 pts)",
+        "People-watch: both correctly guess relationship status 3 times (30 pts)",
+        "Share awkward moments and both laugh at the same time (30 pts)",
+        "Both correctly predict the other's arcade game strength (30 pts)"
+    ],
+    5: [
+        "Team up to beat a high score on any machine together (30 pts)",
+        "Challenge another team and win as a duo (30 pts)",
+        "Take turns picking games—both enjoy every single one (30 pts)",
+        "Perform your victory celebration in perfect sync (30 pts)",
+        "Order complementary drinks that match your spy personas (30 pts)"
+    ]
+};
+
+const versusMiniGames = {
+    1: [
+        "Speed challenge: first to finish prepping their assigned ingredient wins (30 pts winner, 15 pts loser)",
+        "Cooking duel: who makes the better garnish for the nachos? (30 pts winner, 15 pts loser)",
+        "Taste test duel: correctly identify more ingredients than your opponent (30 pts winner, 15 pts loser)",
+        "Speed handshake: create your own faster than your partner (30 pts winner, 15 pts loser)",
+        "Photo contest: take a better 'agent in action' shot (30 pts winner, 15 pts loser)"
+    ],
+    2: [
+        "Django trivia duel: most correct predictions about the movie wins (30 pts winner, 15 pts loser)",
+        "Western quote-off: who can quote more westerns? (30 pts winner, 15 pts loser)",
+        "Nacho rating debate: convince an imaginary judge your rating is better (30 pts winner, 15 pts loser)",
+        "Pose competition: best Django recreation (30 pts winner, 15 pts loser)",
+        "Nickname battle: create a cooler western name (30 pts winner, 15 pts loser)"
+    ],
+    3: [
+        "Quote accuracy contest: who delivers Django lines better? (30 pts winner, 15 pts loser)",
+        "Prediction duel: most accurate scene predictions (30 pts winner, 15 pts loser)",
+        "Bingo race: complete a row faster than your opponent (30 pts winner, 15 pts loser)",
+        "Drawl showdown: best cowboy accent wins (30 pts winner, 15 pts loser)",
+        "Django count: closest to the actual count wins (30 pts winner, 15 pts loser)"
+    ],
+    4: [
+        "20 Questions race: solve it in fewer questions (30 pts winner, 15 pts loser)",
+        "Story battle: create a better stranger backstory (30 pts winner, 15 pts loser)",
+        "People-watching contest: most correct guesses wins (30 pts winner, 15 pts loser)",
+        "Confessional contest: funniest awkward moment wins (30 pts winner, 15 pts loser)",
+        "Prediction duel: more accurate arcade predictions (30 pts winner, 15 pts loser)"
+    ],
+    5: [
+        "Arcade tournament: win more games (30 pts per win)",
+        "High score battle: beat each other's best score (30 pts winner, 15 pts loser)",
+        "Speed run: complete a game faster (30 pts winner, 15 pts loser)",
+        "Victory pose-off: better celebration wins (30 pts winner, 15 pts loser)",
+        "Drink ordering contest: cooler spy drink order (30 pts winner, 15 pts loser)"
+    ]
+};
+
+const coopSideQuests = {
+    1: [
+        "Share the best and worst parts of your day with each other (20 pts)",
+        "Exchange songs and both explain why you love them (20 pts)",
+        "Teach each other a new cooking trick (20 pts)",
+        "Give each other genuine compliments at the same time (20 pts)",
+        "Discover you both have the same ridiculous food craving (20 pts)",
+        "Reenact a shared funny memory together dramatically (20 pts)",
+        "Describe your dream meals and find common ingredients (20 pts)"
+    ],
+    2: [
+        "Toast to your partnership before eating (20 pts)",
+        "Share matching first impressions of the movie (20 pts)",
+        "Reminisce about your favorite shared meal (20 pts)",
+        "Both compliment specific elements of the food (20 pts)",
+        "Agree on your favorite Django character from the opening (20 pts)",
+        "Share excitement about the same upcoming part of the night (20 pts)"
+    ],
+    3: [
+        "React dramatically to the same plot twist in unison (20 pts)",
+        "Take a snack break and list favorite moments together (20 pts)",
+        "Both explain what makes the movie special (20 pts)",
+        "Agree on which Tarantino film is the best (20 pts)",
+        "Plan your next movie date together with matching enthusiasm (20 pts)",
+        "Exchange recommendations the other hasn't seen (20 pts)",
+        "Share memories tied to the same scene type (20 pts)"
+    ],
+    4: [
+        "Play 20 Questions and both enjoy the conversation (20 pts)",
+        "Create a stranger's life story as a collaborative tale (20 pts)",
+        "Successfully guess relationships of 3 couples together (20 pts)",
+        "Share an interesting fact you both find fascinating (20 pts)",
+        "Agree on your next adventure destination (20 pts)",
+        "Give each other compliments at the same time (20 pts)",
+        "Reminisce about shared childhood arcade experiences (20 pts)"
+    ],
+    5: [
+        "Make friendly wagers and both honor them with humor (20 pts)",
+        "Discover each other's unexpected gaming talents together (20 pts)",
+        "Try a new drink both of you enjoy (20 pts)",
+        "Agree whether it's a saloon or spy hideout vibe (20 pts)",
+        "Share travel dreams to the same destination (20 pts)",
+        "Spot first-date couples and agree on all identifications (20 pts)",
+        "Play a new game neither has tried and both enjoy it (20 pts)"
+    ]
+};
+
+const versusSideQuests = {
+    1: [
+        "Better storytelling: who tells the better day recap? (20 pts winner, 10 pts loser)",
+        "Song battle: whose song choice is superior? (20 pts winner, 10 pts loser)",
+        "Cooking tutorial: who teaches the better trick? (20 pts winner, 10 pts loser)",
+        "Compliment quality: who gives the better compliment? (20 pts winner, 10 pts loser)",
+        "Craving creativity: whose food craving is more ridiculous? (20 pts winner, 10 pts loser)",
+        "Reenactment showdown: who's the better actor? (20 pts winner, 10 pts loser)",
+        "Dream meal contest: whose sounds more delicious? (20 pts winner, 10 pts loser)"
+    ],
+    2: [
+        "Toast eloquence: better toast wins (20 pts winner, 10 pts loser)",
+        "First impression: more insightful movie take (20 pts winner, 10 pts loser)",
+        "Memory lane: better shared meal story (20 pts winner, 10 pts loser)",
+        "Critique quality: more detailed food compliment (20 pts winner, 10 pts loser)",
+        "Character prediction: more accurate favorite (20 pts winner, 10 pts loser)",
+        "Enthusiasm contest: more excited about the night (20 pts winner, 10 pts loser)"
+    ],
+    3: [
+        "Reaction intensity: bigger plot twist reaction (20 pts winner, 10 pts loser)",
+        "Movie analysis: deeper favorite moments discussion (20 pts winner, 10 pts loser)",
+        "Tarantino debate: better argument wins (20 pts winner, 10 pts loser)",
+        "Planning skills: better next movie date idea (20 pts winner, 10 pts loser)",
+        "Recommendation quality: better movie suggestion (20 pts winner, 10 pts loser)",
+        "Villain analysis: more compelling favorite villain (20 pts winner, 10 pts loser)",
+        "Personal connection: better scene-to-life story (20 pts winner, 10 pts loser)"
+    ],
+    4: [
+        "Question mastery: ask better 20 Questions (20 pts winner, 10 pts loser)",
+        "Storytelling: create a more entertaining backstory (20 pts winner, 10 pts loser)",
+        "Observation skills: spot more first-date couples (20 pts winner, 10 pts loser)",
+        "Fun fact contest: share a more interesting fact (20 pts winner, 10 pts loser)",
+        "Adventure planning: pitch a better destination (20 pts winner, 10 pts loser)",
+        "Compliment battle: give the better compliment (20 pts winner, 10 pts loser)",
+        "Nostalgia contest: better arcade memory (20 pts winner, 10 pts loser)"
+    ],
+    5: [
+        "Wager creativity: make more interesting bets (20 pts winner, 10 pts loser)",
+        "Gaming prowess: demonstrate superior skills (20 pts winner, 10 pts loser)",
+        "Drink selection: order the cooler beverage (20 pts winner, 10 pts loser)",
+        "Atmosphere reading: better venue vibe analysis (20 pts winner, 10 pts loser)",
+        "Travel pitch: more appealing destination description (20 pts winner, 10 pts loser)",
+        "Detective skills: identify more first-daters (20 pts winner, 10 pts loser)",
+        "Courage contest: try the more unusual game (20 pts winner, 10 pts loser)"
+    ]
+};
+
+// Mode-specific secret missions
+const coopSecretMissions = [
+    {
+        task: "Both say 'The Django needs saving' in perfect unison while maintaining eye contact for 5 seconds without laughing",
+        timeLimit: 5,
+        points: 75
+    },
+    {
+        task: "Order drinks together as your spy personas and both stay in character for the entire interaction",
+        timeLimit: 8,
+        points: 75
+    },
+    {
+        task: "Work together to naturally reference 'nachos' in a conversation with a stranger",
+        timeLimit: 10,
+        points: 75
+    },
+    {
+        task: "Take a synchronized spy pose photo together without explaining to anyone nearby",
+        timeLimit: 3,
+        points: 75
+    },
+    {
+        task: "Perform a coordinated dance-off together (minimum 30 seconds total)",
+        timeLimit: 2,
+        points: 75
+    }
+];
+
+const versusSecretMissions = [
+    {
+        task: "Race to say 'The Django needs saving' first and maintain eye contact without laughing longer",
+        timeLimit: 5,
+        points: 75,
+        versusPoints: 50
+    },
+    {
+        task: "Order drinks in character—whoever stays in character longer without breaking wins",
+        timeLimit: 8,
+        points: 75,
+        versusPoints: 50
+    },
+    {
+        task: "Race to naturally reference 'nachos' to a stranger first—smoothest integration wins",
+        timeLimit: 10,
+        points: 75,
+        versusPoints: 50
+    },
+    {
+        task: "Separate spy pose competition—who takes the better dramatic photo?",
+        timeLimit: 3,
+        points: 75,
+        versusPoints: 50
+    },
+    {
+        task: "Dance-off battle—who has the better moves? (15 seconds each)",
+        timeLimit: 2,
+        points: 75,
+        versusPoints: 50
+    }
+];
+
+// Mode-specific midnight missions
+const coopMidnightMissions = [
+    { task: "Execute a perfect synchronized high-five at exactly midnight", points: 40 },
+    { task: "Team up to convince a stranger you're both undercover agents", points: 40 },
+    { task: "Together order and share the weirdest drink combination", points: 40 },
+    { task: "Work as a team to find someone named 'Nick' or 'Nicole' together", points: 40 },
+    { task: "Coordinate to get a stranger to photograph your synchronized spy poses", points: 40 },
+    { task: "Start a conga line together (minimum 3 people total)", points: 40 },
+    { task: "Tag-team to compliment 5 different people in under 5 minutes", points: 40 },
+    { task: "Drink something together while maintaining mutual eye contact for 10 seconds", points: 40 },
+    { task: "Discover the bartender's name together and both use it 3 times", points: 40 },
+    { task: "Create and demonstrate your secret kiss signal to each other", points: 40 }
+];
+
+const versusMidnightMissions = [
+    { task: "Race to high-five at exactly midnight—closest to perfect timing wins", points: 40, versusPoints: 25 },
+    { task: "Competition: who convinces a stranger better that they're an undercover agent?", points: 40, versusPoints: 25 },
+    { task: "Order weird drinks—whose is more bizarre/adventurous?", points: 40, versusPoints: 25 },
+    { task: "Race to find someone named 'Nick' or 'Nicole' first", points: 40, versusPoints: 25 },
+    { task: "Separate spy pose photos—whose gets the better rating from a stranger?", points: 40, versusPoints: 25 },
+    { task: "Who can get more people to join their conga line?", points: 40, versusPoints: 25 },
+    { task: "Race to compliment 5 people first (both must complete for points)", points: 40, versusPoints: 25 },
+    { task: "Staring contest with drinks—who maintains eye contact longer?", points: 40, versusPoints: 25 },
+    { task: "Race to learn the bartender's name and use it 3 times first", points: 40, versusPoints: 25 },
+    { task: "Create the most creative secret kiss signal—demonstrate for judging", points: 40, versusPoints: 25 }
 ];
 
 const ranks = [
@@ -1267,13 +1555,28 @@ function initializeMissions() {
     missions.forEach(mission => {
         // Randomly select objectives
         const mainObj = mission.mainObjectives[Math.floor(Math.random() * mission.mainObjectives.length)];
-        const selectedMiniGames = shuffleArray(mission.miniGames).slice(0, 3);
-        const selectedSideQuests = shuffleArray(mission.sideQuests).slice(0, Math.floor(Math.random() * 3) + 2);
+        
+        // Get mode-specific mini games and side quests
+        const modeMiniGames = getMiniGamesForMission(mission.id);
+        const modeSideQuests = getSideQuestsForMission(mission.id);
+        
+        // Use mode-specific tasks if available, otherwise fall back to mission defaults
+        const miniGamesToUse = modeMiniGames.length > 0 ? modeMiniGames : mission.miniGames;
+        const sideQuestsToUse = modeSideQuests.length > 0 ? modeSideQuests : mission.sideQuests;
+        
+        // Always select exactly 2 mini games
+        const selectedMiniGames = shuffleArray(miniGamesToUse).slice(0, 2);
+        
+        // Select 3 side quests: 1 photo task + 2 regular tasks
+        const photoTask = mission.photoTasks[Math.floor(Math.random() * mission.photoTasks.length)];
+        const regularSideQuests = shuffleArray(sideQuestsToUse).slice(0, 2);
+        const selectedSideQuests = [...regularSideQuests, photoTask];
 
         const missionEl = createMissionElement(mission, mainObj, selectedMiniGames, selectedSideQuests);
         container.appendChild(missionEl);
     });
 
+    updateModeDisplay();
     initializeAchievements();
     checkMidnightMissions(); // Initialize midnight missions immediately
     startMissionTracking();
@@ -1450,8 +1753,34 @@ function completeTask(type, missionId, taskIdx) {
     });
 
     taskEl.classList.add('completed');
-    const points = type === 'mini' ? 30 : 20;
-    addScore(points);
+    const basePoints = type === 'mini' ? 30 : 20;
+    
+    // In versus mode, show winner selection modal for competitive tasks
+    if (gameState.gameMode === 'versus') {
+        // Check if this is a competitive task (contains winner/loser points info)
+        const isCompetitive = taskDescription.includes('pts winner') || 
+                             taskDescription.includes('winner') || 
+                             taskDescription.includes('loser') ||
+                             taskDescription.includes('wins') ||
+                             taskDescription.includes('better') ||
+                             taskDescription.includes('duel') ||
+                             taskDescription.includes('battle') ||
+                             taskDescription.includes('contest') ||
+                             taskDescription.includes('competition');
+        
+        if (isCompetitive) {
+            completeVersusTask(type === 'mini' ? 'Mini-Game' : 'Side Quest', basePoints, missionId, taskIdx);
+        } else {
+            // Non-competitive task in versus mode - both get points
+            addPoints(basePoints, 1);
+            addPoints(basePoints, 2);
+            showNotification(`Both players: +${basePoints} points!`);
+        }
+    } else {
+        // Co-op mode
+        addScore(basePoints);
+        showNotification(`+${basePoints} points!`);
+    }
     
     if (type === 'mini') {
         gameState.completedMiniGames++;
@@ -1461,7 +1790,6 @@ function completeTask(type, missionId, taskIdx) {
 
     recordTaskCompletion(type, missionId);
     checkAchievements(missionId);
-    showNotification(`+${points} points!`);
     saveGameState();
 }
 
@@ -1569,9 +1897,11 @@ function rerollMission(missionId) {
 function revealSecretMission() {
     if (gameState.secretMissionRevealed) return;
 
-    const secretMission = secretMissions[Math.floor(Math.random() * secretMissions.length)];
+    const modeSecretMissions = getSecretMissionsForMode();
+    const secretMission = modeSecretMissions[Math.floor(Math.random() * modeSecretMissions.length)];
     gameState.secretMissionRevealed = true;
     gameState.secretMissionActive = true;
+    gameState.currentSecretMission = secretMission;
 
     const content = document.getElementById('secretMissionContent');
     const revealBtn = document.getElementById('revealSecretBtn');
@@ -1579,11 +1909,20 @@ function revealSecretMission() {
     revealBtn.classList.add('hidden');
     content.classList.remove('hidden');
     
+    const modeLabel = gameState.gameMode === 'versus' ? 
+        '<div class="mode-label" style="display: inline-block; margin-bottom: 10px;">⚔️ VERSUS MODE</div>' : 
+        '<div class="mode-label" style="display: inline-block; margin-bottom: 10px;">🤝 CO-OP MODE</div>';
+    
+    const buttonText = gameState.gameMode === 'versus' ? 
+        'COMPLETE (Winner +75, Loser +50)' : 
+        'COMPLETE SECRET MISSION (+75)';
+    
     content.innerHTML = `
         <div style="background: rgba(74, 144, 226, 0.2); padding: 15px; border-radius: 8px; margin: 15px 0;">
+            ${modeLabel}
             <p style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;">${secretMission.task}</p>
             <div class="timer" id="secretTimer">${secretMission.timeLimit}:00</div>
-            <button class="btn primary" onclick="completeSecretMission()">COMPLETE SECRET MISSION (+75)</button>
+            <button class="btn primary" onclick="completeSecretMission()">${buttonText}</button>
         </div>
     `;
 
@@ -1622,13 +1961,56 @@ function completeSecretMission() {
 
     gameState.secretMissionActive = false;
     gameState.secretMissionCompleted = true;
-    addScore(75);
+    
+    if (gameState.gameMode === 'versus') {
+        // Show winner selection modal for versus mode
+        const modal = document.createElement('div');
+        modal.className = 'poll-modal';
+        modal.innerHTML = `
+            <div class="poll-content">
+                <h3>🔐 SECRET MISSION COMPLETE!</h3>
+                <p style="font-size: 14px; margin: 15px 0;">Who completed it better?</p>
+                <div style="display: flex; gap: 15px; justify-content: center; margin: 20px 0;">
+                    <button class="btn primary" onclick="awardSecretMissionPoints(1); this.closest('.poll-modal').remove();">
+                        🌸 Agent Wildflower<br>
+                        <span style="font-size: 11px;">(+75 pts)</span>
+                    </button>
+                    <button class="btn primary" onclick="awardSecretMissionPoints(2); this.closest('.poll-modal').remove();">
+                        🧅 The Onion Slayer<br>
+                        <span style="font-size: 11px;">(+75 pts)</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        addScore(75);
+        const content = document.getElementById('secretMissionContent');
+        content.innerHTML = '<p style="color: #7cb342; font-size: 14px;">✓ SECRET MISSION COMPLETED! +75 POINTS</p>';
+        showNotification('Secret mission complete! Well done, agents! 🔐');
+    }
+    
     unlockAchievement('classified');
+}
+
+function awardSecretMissionPoints(winner) {
+    const winnerPoints = 75;
+    const loserPoints = 50;
+    
+    if (winner === 1) {
+        addPoints(winnerPoints, 1);
+        addPoints(loserPoints, 2);
+        showNotification('🌸 Wildflower wins secret mission!', `+${winnerPoints} pts (Onion Slayer +${loserPoints} pts)`);
+    } else {
+        addPoints(winnerPoints, 2);
+        addPoints(loserPoints, 1);
+        showNotification('🧅 Onion Slayer wins secret mission!', `+${winnerPoints} pts (Wildflower +${loserPoints} pts)`);
+    }
     
     const content = document.getElementById('secretMissionContent');
-    content.innerHTML = '<p style="color: #7cb342; font-size: 14px;">✓ SECRET MISSION COMPLETED! +75 POINTS</p>';
+    content.innerHTML = `<p style="color: #7cb342; font-size: 14px;">✓ SECRET MISSION COMPLETED!</p>`;
     
-    showNotification('Secret mission complete! Well done, agents! 🔐');
+    saveGameState();
 }
 
 function failSecretMission() {
@@ -1858,6 +2240,9 @@ function finishMission() {
     const dateEndTime = new Date();
     const dateDuration = Math.floor((dateEndTime - gameState.dateStartTime) / 1000 / 60); // minutes
     
+    // End Firebase session if active
+    endFirebaseSession();
+    
     // Unlock and reveal hidden achievement
     const hiddenAchievement = achievements.find(a => a.id === 'hidden');
     if (hiddenAchievement && !hiddenAchievement.unlocked) {
@@ -1888,9 +2273,50 @@ function finishMission() {
     const summaryContainer = document.getElementById('summaryScreenContainer');
     summaryContainer.classList.remove('hidden');
     
+    // Generate versus mode winner section if applicable
+    let versusWinnerSection = '';
+    if (gameState.gameMode === 'versus') {
+        const winner = gameState.player1Score > gameState.player2Score ? 
+            { name: '🌸 Agent Wildflower', score: gameState.player1Score } :
+            gameState.player2Score > gameState.player1Score ?
+            { name: '🧅 The Onion Slayer', score: gameState.player2Score } :
+            { name: 'TIE', score: gameState.player1Score };
+        
+        const margin = Math.abs(gameState.player1Score - gameState.player2Score);
+        
+        versusWinnerSection = `
+            <div style="background: rgba(212, 175, 55, 0.3); padding: 20px; border-radius: 8px; margin: 20px 0; border: 3px solid #d4af37; text-align: center;">
+                <h3 style="color: #d4af37; font-size: 22px; margin-bottom: 15px;">⚔️ VERSUS MODE RESULTS ⚔️</h3>
+                ${winner.name === 'TIE' ? `
+                    <div style="font-size: 32px; color: #ffd700; margin: 15px 0;">🤝 PERFECT TIE! 🤝</div>
+                    <div style="font-size: 18px; color: #c0c0c0;">Both agents scored ${winner.score} points</div>
+                    <div style="font-size: 14px; margin-top: 10px; color: #888;">True partnership knows no competition!</div>
+                ` : `
+                    <div style="font-size: 32px; color: #ffd700; margin: 15px 0;">🏆 ${winner.name} WINS! 🏆</div>
+                    <div style="font-size: 18px; color: #c0c0c0;">Victory by ${margin} points</div>
+                    <div style="margin-top: 15px; display: flex; justify-content: center; gap: 40px;">
+                        <div>
+                            <div style="color: #4a90e2; font-size: 14px;">🌸 Agent Wildflower</div>
+                            <div style="color: #d4af37; font-size: 24px; font-weight: bold;">${gameState.player1Score}</div>
+                        </div>
+                        <div>
+                            <div style="color: #e74c3c; font-size: 14px;">🧅 The Onion Slayer</div>
+                            <div style="color: #d4af37; font-size: 24px; font-weight: bold;">${gameState.player2Score}</div>
+                        </div>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+    
+    const modeLabel = gameState.gameMode === 'coop' ? '🤝 CO-OP MODE' : '⚔️ VERSUS MODE';
+    
     summaryContainer.innerHTML = `
         <div class="summary-screen">
             <h2>🎯 OPERATION SUMMARY</h2>
+            <div style="font-size: 14px; color: #d4af37; margin-bottom: 15px;">${modeLabel}</div>
+            
+            ${versusWinnerSection}
             
             <div class="score-display">${gameState.totalScore}</div>
             <div class="rank-display" style="font-size: 20px; color: #d4af37; margin: 15px 0;">${currentRank.name}</div>
@@ -2038,20 +2464,57 @@ function loadNextMidnightMission() {
         return;
     }
 
-    const mission = midnightMissions[gameState.midnightMissionsCompleted];
+    const modeMissions = getMidnightMissionsForMode();
+    const mission = modeMissions[gameState.midnightMissionsCompleted];
     const content = document.getElementById('midnightMissionContent');
+    
+    const modeLabel = gameState.gameMode === 'versus' ? 
+        '<div class="mode-label" style="display: inline-block; margin-bottom: 10px;">⚔️ VERSUS MODE</div>' : 
+        '<div class="mode-label" style="display: inline-block; margin-bottom: 10px;">🤝 CO-OP MODE</div>';
+    
+    const buttonText = gameState.gameMode === 'versus' ? 
+        `COMPLETE (Winner +${mission.points}, Loser +${mission.versusPoints || 25})` : 
+        `COMPLETE (+${mission.points})`;
     
     content.innerHTML = `
         <div style="background: rgba(155, 89, 182, 0.2); padding: 15px; border-radius: 8px; margin: 10px 0;">
+            ${modeLabel}
             <p style="font-size: 13px; line-height: 1.5; margin-bottom: 10px;">${mission.task}</p>
-            <button class="btn primary" onclick="completeMidnightMission()">COMPLETE (+${mission.points})</button>
+            <button class="btn primary" onclick="completeMidnightMission()">${buttonText}</button>
         </div>
     `;
 }
 
 function completeMidnightMission() {
-    const mission = midnightMissions[gameState.midnightMissionsCompleted];
-    addScore(mission.points);
+    const modeMissions = getMidnightMissionsForMode();
+    const mission = modeMissions[gameState.midnightMissionsCompleted];
+    
+    if (gameState.gameMode === 'versus') {
+        // Show winner selection modal
+        const modal = document.createElement('div');
+        modal.className = 'poll-modal';
+        modal.innerHTML = `
+            <div class="poll-content">
+                <h3>🌙 WITCHING HOUR COMPLETE!</h3>
+                <p style="font-size: 14px; margin: 15px 0;">Who completed it better?</p>
+                <div style="display: flex; gap: 15px; justify-content: center; margin: 20px 0;">
+                    <button class="btn primary" onclick="awardMidnightPoints(${mission.points}, ${mission.versusPoints || 25}, 1); this.closest('.poll-modal').remove();">
+                        🌸 Agent Wildflower<br>
+                        <span style="font-size: 11px;">(+${mission.points} pts)</span>
+                    </button>
+                    <button class="btn primary" onclick="awardMidnightPoints(${mission.points}, ${mission.versusPoints || 25}, 2); this.closest('.poll-modal').remove();">
+                        🧅 The Onion Slayer<br>
+                        <span style="font-size: 11px;">(+${mission.points} pts)</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        addScore(mission.points);
+        showNotification(`+${mission.points} points!`);
+    }
+    
     gameState.midnightMissionsCompleted++;
     
     document.getElementById('midnightProgress').textContent = `${gameState.midnightMissionsCompleted} / 10`;
@@ -2139,6 +2602,13 @@ function addScore(points) {
     saveGameState();
 }
 
+function updateProgress() {
+    updateProgressBar();
+    if (gameState.gameMode === 'versus') {
+        updateVersusScores();
+    }
+}
+
 function updateProgressBar() {
     const maxScore = 1000;
     const percentage = Math.min((gameState.totalScore / maxScore) * 100, 100);
@@ -2152,13 +2622,17 @@ function updateProgressBar() {
     );
 }
 
-function showNotification(message, type = 'success') {
+function showNotification(message, subtitle = null) {
     const notification = document.createElement('div');
     notification.className = 'notification';
-    notification.textContent = message;
     
-    if (type === 'error') {
+    if (subtitle) {
+        notification.innerHTML = `<strong>${message}</strong><br><span style="font-size: 11px;">${subtitle}</span>`;
+    } else if (message === 'error' || subtitle === 'error') {
+        notification.textContent = typeof subtitle === 'string' && subtitle !== 'error' ? subtitle : message;
         notification.style.background = '#e74c3c';
+    } else {
+        notification.textContent = message;
     }
     
     document.body.appendChild(notification);
@@ -2235,6 +2709,12 @@ function startMission() {
     
     if (now < unlockDate && !gameState.testMode) {
         alert(`🤠 EASY THERE, TRIGGER FINGER! 🕵️\n\nLooks like someone's eager to ride into action...\n\nBut even the sharpest agents know the value of patience. This saloon doesn't open its doors 'til Saturday, partner.\n\n🔒 OPERATION DJANGO SALSA\nClassified until December 6th, 2025\n\nThe mission will be worth the wait. 🌵`);
+        return;
+    }
+    
+    // Check if mode was selected
+    if (!gameState.gameMode) {
+        alert('Please select a game mode first! 🎯');
         return;
     }
     
@@ -2321,7 +2801,473 @@ function checkOperationLock() {
     }
 }
 
+// Mode selection and management
+function selectMode(mode) {
+    gameState.gameMode = mode;
+    
+    // Highlight selected mode
+    document.querySelectorAll('.mode-card').forEach(card => {
+        card.style.border = '3px solid #8b4513';
+        card.style.opacity = '0.7';
+    });
+    
+    const selectedCard = event.target.closest('.mode-card');
+    if (selectedCard) {
+        selectedCard.style.border = '3px solid #d4af37';
+        selectedCard.style.opacity = '1';
+        selectedCard.style.transform = 'scale(1.05)';
+    }
+    
+    // Show sync options
+    document.querySelector('.sync-options').style.display = 'block';
+    
+    showNotification(`${mode === 'coop' ? '🤝 Co-op' : '⚔️ Versus'} mode selected!`);
+    saveGameState();
+}
+
+function updateModeDisplay() {
+    const modeIndicator = document.getElementById('modeIndicator');
+    const versusScores = document.getElementById('versusScores');
+    
+    if (!modeIndicator) return;
+    
+    if (gameState.gameMode === 'coop') {
+        modeIndicator.innerHTML = '🤝 CO-OP MODE - Working Together';
+        modeIndicator.style.color = '#4a90e2';
+        if (versusScores) versusScores.classList.add('hidden');
+    } else if (gameState.gameMode === 'versus') {
+        modeIndicator.innerHTML = '⚔️ VERSUS MODE - Competitive';
+        modeIndicator.style.color = '#e74c3c';
+        if (versusScores) {
+            versusScores.classList.remove('hidden');
+            updateVersusScores();
+        }
+    }
+}
+
+function updateVersusScores() {
+    const p1Score = document.getElementById('player1Score');
+    const p2Score = document.getElementById('player2Score');
+    
+    if (p1Score) p1Score.textContent = gameState.player1Score;
+    if (p2Score) p2Score.textContent = gameState.player2Score;
+}
+
+function addPoints(points, player = null) {
+    if (gameState.gameMode === 'versus' && player) {
+        if (player === 1) {
+            gameState.player1Score += points;
+        } else if (player === 2) {
+            gameState.player2Score += points;
+        }
+        gameState.totalScore = gameState.player1Score + gameState.player2Score;
+        updateVersusScores();
+    } else {
+        gameState.totalScore += points;
+    }
+    
+    updateProgress();
+    saveGameState();
+}
+
+function getMiniGamesForMission(missionId) {
+    if (gameState.gameMode === 'versus') {
+        return versusMiniGames[missionId] || [];
+    }
+    return coopMiniGames[missionId] || [];
+}
+
+function getSideQuestsForMission(missionId) {
+    if (gameState.gameMode === 'versus') {
+        return versusSideQuests[missionId] || [];
+    }
+    return coopSideQuests[missionId] || [];
+}
+
+function getSecretMissionsForMode() {
+    if (gameState.gameMode === 'versus') {
+        return versusSecretMissions;
+    }
+    return coopSecretMissions;
+}
+
+function getMidnightMissionsForMode() {
+    if (gameState.gameMode === 'versus') {
+        return versusMidnightMissions;
+    }
+    return coopMidnightMissions;
+}
+
+function completeVersusTask(taskType, points, winnerPlayer) {
+    if (gameState.gameMode !== 'versus') return;
+    
+    const modal = document.createElement('div');
+    modal.className = 'poll-modal';
+    modal.innerHTML = `
+        <div class="poll-content">
+            <h3>⚔️ WHO WON?</h3>
+            <p style="font-size: 14px; margin: 15px 0;">${taskType} Challenge</p>
+            <div style="display: flex; gap: 15px; justify-content: center; margin: 20px 0;">
+                <button class="btn primary" onclick="awardVersusPoints(${points}, 1, '${taskType}'); this.closest('.poll-modal').remove();">
+                    🌸 Agent Wildflower<br>
+                    <span style="font-size: 11px;">(${points} pts)</span>
+                </button>
+                <button class="btn primary" onclick="awardVersusPoints(${points}, 2, '${taskType}'); this.closest('.poll-modal').remove();">
+                    🧅 The Onion Slayer<br>
+                    <span style="font-size: 11px;">(${points} pts)</span>
+                </button>
+            </div>
+            <button class="btn" onclick="this.closest('.poll-modal').remove();" style="font-size: 11px;">Cancel</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function awardVersusPoints(points, player, taskType) {
+    const loserPoints = Math.floor(points / 2);
+    
+    if (player === 1) {
+        addPoints(points, 1);
+        addPoints(loserPoints, 2);
+        showNotification(`🌸 Agent Wildflower wins ${taskType}!`, `+${points} pts (Onion Slayer +${loserPoints} pts)`);
+    } else {
+        addPoints(points, 2);
+        addPoints(loserPoints, 1);
+        showNotification(`🧅 The Onion Slayer wins ${taskType}!`, `+${points} pts (Wildflower +${loserPoints} pts)`);
+    }
+    
+    saveGameState();
+}
+
+function awardMidnightPoints(winnerPoints, loserPoints, winner) {
+    if (winner === 1) {
+        addPoints(winnerPoints, 1);
+        addPoints(loserPoints, 2);
+        showNotification('🌸 Wildflower wins midnight challenge!', `+${winnerPoints} pts (Onion Slayer +${loserPoints} pts)`);
+    } else {
+        addPoints(winnerPoints, 2);
+        addPoints(loserPoints, 1);
+        showNotification('🧅 Onion Slayer wins midnight challenge!', `+${winnerPoints} pts (Wildflower +${loserPoints} pts)`);
+    }
+    
+    updateMidnightProgress();
+    
+    if (gameState.midnightMissionsCompleted >= 10) {
+        document.getElementById('midnightMissionContent').innerHTML = 
+            '<p style="color: #7cb342; text-align: center; padding: 20px;">🎉 ALL WITCHING HOUR CHALLENGES COMPLETED!</p>';
+        unlockAchievement('witching');
+    } else {
+        loadNextMidnightMission();
+    }
+    
+    saveGameState();
+}
+
+// Firebase Sync Functions
+function initializeFirebase() {
+    if (firebaseApp) return true; // Already initialized
+    
+    if (typeof firebase === 'undefined') {
+        console.error('Firebase SDK not loaded');
+        return false;
+    }
+    
+    try {
+        firebaseApp = firebase.initializeApp(firebaseConfig);
+        database = firebase.database();
+        console.log('Firebase initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Firebase initialization error:', error);
+        return false;
+    }
+}
+
+function generateSessionCode() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+
+function createSyncSession() {
+    if (!gameState.gameMode) {
+        alert('Please select a game mode first! 🎯');
+        return;
+    }
+    
+    console.log('Creating sync session...');
+    
+    const initialized = initializeFirebase();
+    
+    if (!initialized || !database) {
+        console.error('Firebase not available');
+        alert('⚠️ Firebase not available. Please check your internet connection and refresh the page.');
+        return;
+    }
+    
+    sessionCode = generateSessionCode();
+    isHost = true;
+    
+    console.log('Generated session code:', sessionCode);
+    
+    sessionRef = database.ref(`sessions/${sessionCode}`);
+    
+    // Initialize session
+    sessionRef.set({
+        host: true,
+        partner: false,
+        createdAt: Date.now(),
+        gameState: gameState
+    }).then(() => {
+        console.log('Session created successfully');
+        syncEnabled = true;
+        
+        // Show session info on landing page
+        const sessionInfo = document.getElementById('sessionInfo');
+        const sessionCodeEl = document.getElementById('sessionCode');
+        
+        if (sessionInfo && sessionCodeEl) {
+            sessionInfo.classList.remove('hidden');
+            sessionCodeEl.textContent = sessionCode;
+            console.log('Session info displayed:', sessionCode);
+        } else {
+            console.error('Session info elements not found');
+        }
+        
+        // Show alert with session code as backup
+        alert(`🎯 Session Created!\n\nYour session code is: ${sessionCode}\n\nShare this code with your partner so they can join!`);
+        
+        // Listen for partner joining
+        sessionRef.child('partner').on('value', (snapshot) => {
+            const partnerConnected = snapshot.val();
+            const statusEl = document.getElementById('partnerStatus');
+            if (statusEl) {
+                if (partnerConnected) {
+                    statusEl.textContent = '✓ Connected';
+                    statusEl.style.color = '#7cb342';
+                    showNotification('Partner connected! 🤝');
+                } else {
+                    statusEl.textContent = 'Waiting...';
+                    statusEl.style.color = '#888';
+                }
+            }
+        });
+        
+        // Listen for game state changes from partner
+        sessionRef.child('gameState').on('value', (snapshot) => {
+            if (!isHost && snapshot.val()) {
+                receiveGameState(snapshot.val());
+            }
+        });
+        
+        showNotification(`Session created! Code: ${sessionCode}`);
+        
+        // Proceed to start mission
+        startMission();
+    }).catch((error) => {
+        console.error('Session creation error:', error);
+        alert(`Failed to create session: ${error.message}. Please try again.`);
+    });
+}
+
+function showJoinModal() {
+    if (!gameState.gameMode) {
+        alert('Please select a game mode first! 🎯');
+        return;
+    }
+    
+    console.log('Showing join modal...');
+    const code = prompt('Enter the 6-character session code from your partner:');
+    console.log('User entered code:', code);
+    
+    if (code && code.trim()) {
+        joinSyncSession(code.trim().toUpperCase());
+    } else {
+        console.log('No code entered');
+    }
+}
+
+function joinSyncSession(code) {
+    console.log('Joining session with code:', code);
+    
+    const initialized = initializeFirebase();
+    
+    if (!initialized || !database) {
+        console.error('Firebase not available');
+        alert('⚠️ Firebase not available. Please check your internet connection and refresh the page.');
+        return;
+    }
+    
+    sessionCode = code;
+    isHost = false;
+    
+    sessionRef = database.ref(`sessions/${sessionCode}`);
+    
+    // Check if session exists
+    sessionRef.once('value').then((snapshot) => {
+        console.log('Session check result:', snapshot.exists());
+        
+        if (!snapshot.exists()) {
+            alert('❌ Session not found. Please check the code and try again.');
+            console.error('Session not found:', code);
+            return;
+        }
+        
+        console.log('Session found, joining...');
+        
+        // Mark partner as connected
+        sessionRef.child('partner').set(true).then(() => {
+            console.log('Partner marked as connected');
+            syncEnabled = true;
+            
+            // Load host's game state
+            const hostState = snapshot.val().gameState;
+            if (hostState) {
+                Object.assign(gameState, hostState);
+            }
+            
+            // Show session info
+            const sessionInfo = document.getElementById('sessionInfo');
+            if (sessionInfo) {
+                sessionInfo.classList.remove('hidden');
+                document.getElementById('sessionCode').textContent = sessionCode;
+                document.getElementById('partnerStatus').textContent = '✓ Connected';
+                document.getElementById('partnerStatus').style.color = '#7cb342';
+            }
+            
+            // Show confirmation
+            alert(`✅ Connected to session: ${sessionCode}`);
+            
+            // Listen for game state changes from host
+            sessionRef.child('gameState').on('value', (snapshot) => {
+                if (snapshot.val()) {
+                    receiveGameState(snapshot.val());
+                }
+            });
+            
+            showNotification('Connected to session! 🤝');
+            
+            // Proceed to start mission
+            startMission();
+        });
+    }).catch((error) => {
+        console.error('Join session error:', error);
+        alert('Failed to join session. Please try again.');
+    });
+}
+
+function skipSync() {
+    if (!gameState.gameMode) {
+        alert('Please select a game mode first! 🎯');
+        return;
+    }
+    
+    syncEnabled = false;
+    showNotification('Solo mode - no sync active');
+    
+    // Proceed to start mission
+    startMission();
+}
+
+function endFirebaseSession() {
+    if (!syncEnabled || !sessionRef) return;
+    
+    console.log('Ending Firebase session...');
+    
+    try {
+        // Mark session as ended
+        sessionRef.update({
+            ended: true,
+            endedAt: Date.now(),
+            finalScore: gameState.totalScore,
+            player1Score: gameState.player1Score || 0,
+            player2Score: gameState.player2Score || 0
+        }).then(() => {
+            console.log('Session marked as ended');
+            
+            // Remove listeners
+            sessionRef.off();
+            
+            // Delete session after 5 seconds to give partner time to see final state
+            setTimeout(() => {
+                if (isHost) {
+                    sessionRef.remove().then(() => {
+                        console.log('Session deleted from Firebase');
+                    }).catch((error) => {
+                        console.error('Error deleting session:', error);
+                    });
+                }
+            }, 5000);
+            
+            // Disable sync
+            syncEnabled = false;
+            sessionRef = null;
+            
+            showNotification('📡 Session ended');
+        }).catch((error) => {
+            console.error('Error ending session:', error);
+        });
+    } catch (error) {
+        console.error('Error in endFirebaseSession:', error);
+    }
+}
+
+function syncGameState() {
+    if (!syncEnabled || !sessionRef) return;
+    
+    // Update game state in Firebase
+    sessionRef.child('gameState').set(gameState).catch((error) => {
+        console.error('Sync error:', error);
+    });
+}
+
+function receiveGameState(newState) {
+    if (!syncEnabled) return;
+    
+    // Update local state from Firebase
+    const previousScore = gameState.totalScore;
+    Object.assign(gameState, newState);
+    
+    // Update UI
+    updateProgressBar();
+    updateModeDisplay();
+    if (gameState.gameMode === 'versus') {
+        updateVersusScores();
+    }
+    
+    // Show notification if score changed
+    if (gameState.totalScore !== previousScore) {
+        const diff = gameState.totalScore - previousScore;
+        if (diff > 0) {
+            showNotification(`Partner completed a task! +${diff} pts`);
+        }
+    }
+    
+    // Update completed tasks UI
+    setTimeout(() => {
+        // Refresh the missions display
+        document.querySelectorAll('.task').forEach(task => {
+            const taskId = task.id;
+            if (gameState.completedTasks && gameState.completedTasks.includes(taskId)) {
+                task.classList.add('completed');
+            }
+        });
+    }, 100);
+}
+
+// Override saveGameState to also sync to Firebase
+const originalSaveGameState = saveGameState;
+saveGameState = function() {
+    originalSaveGameState();
+    if (syncEnabled) {
+        syncGameState();
+    }
+};
+
 // Call on page load
 checkOperationLock();
 // Update lock status every minute
 setInterval(checkOperationLock, 60000);
+
+// Initialize Firebase on load
+window.addEventListener('load', () => {
+    initializeFirebase();
+});
