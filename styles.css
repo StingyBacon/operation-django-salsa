@@ -1166,6 +1166,117 @@ body > * {
         0 0 30px rgba(212, 175, 55, 0.4);
 }
 
+.mode-selection {
+    margin: 40px 0;
+    animation: fadeInUp 0.8s ease-out 0.3s backwards;
+}
+
+.mode-card {
+    background: rgba(42, 42, 62, 0.9);
+    border: 3px solid #8b4513;
+    border-radius: 12px;
+    padding: 25px;
+    width: 280px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(45deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+    transform: rotate(45deg);
+    transition: all 0.5s;
+}
+
+.mode-card:hover {
+    border-color: #d4af37;
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+}
+
+.mode-card:hover::before {
+    left: 100%;
+}
+
+.mode-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    animation: bounce 2s infinite;
+}
+
+.mode-card h3 {
+    color: #d4af37;
+    font-size: 18px;
+    margin-bottom: 10px;
+}
+
+.mode-card p {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #c0c0c0;
+    margin-bottom: 10px;
+}
+
+.mode-card ul {
+    list-style: none;
+    padding-left: 0;
+    color: #888;
+}
+
+.mode-card ul li {
+    padding: 3px 0;
+    position: relative;
+    padding-left: 15px;
+}
+
+.mode-card ul li:before {
+    content: "▸";
+    position: absolute;
+    left: 0;
+    color: #d4af37;
+}
+
+.mode-indicator-header {
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.versus-scores {
+    font-size: 13px;
+}
+
+.player-score {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.mode-label {
+    font-size: 11px;
+    background: rgba(212, 175, 55, 0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 10px;
+    color: #d4af37;
+}
+
+.versus-task-assignment {
+    background: rgba(74, 144, 226, 0.15);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    font-size: 11px;
+    border-left: 3px solid #4a90e2;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -1669,5 +1780,4 @@ body > * {
         padding: 20px;
         max-width: 95%;
     }
-
 }
