@@ -36,7 +36,56 @@
             </p>
         </div>
 
-        <button class="start-mission-btn" onclick="startMission()">🎯 INITIATE OPERATION</button>
+        <div class="mode-selection">
+            <h2 style="color: #d4af37; text-align: center; margin-bottom: 20px;">⚔️ SELECT YOUR MODE ⚔️</h2>
+            <div style="display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                <div class="mode-card" onclick="selectMode('coop')">
+                    <div class="mode-icon">🤝</div>
+                    <h3>CO-OP MODE</h3>
+                    <p>Work together as a team. Share objectives and combine your scores. Perfect harmony leads to legendary status!</p>
+                    <ul style="font-size: 11px; text-align: left; margin-top: 10px;">
+                        <li>Shared scoring system</li>
+                        <li>Team challenges</li>
+                        <li>Cooperative mini-games</li>
+                        <li>Combined progress tracking</li>
+                    </ul>
+                </div>
+                <div class="mode-card" onclick="selectMode('versus')">
+                    <div class="mode-icon">⚔️</div>
+                    <h3>VERSUS MODE</h3>
+                    <p>Compete head-to-head! Earn individual points and battle for supremacy. May the best agent win!</p>
+                    <ul style="font-size: 11px; text-align: left; margin-top: 10px;">
+                        <li>Individual scoring</li>
+                        <li>Competitive challenges</li>
+                        <li>Head-to-head mini-games</li>
+                        <li>Winner takes glory</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sync-options" style="margin: 30px 0; display: none;">
+            <h3 style="color: #d4af37; text-align: center; margin-bottom: 15px;">🔄 SYNC OPTIONS</h3>
+            <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                <button class="btn primary" onclick="createSyncSession()" style="font-size: 12px; padding: 10px 20px;">
+                    📱 CREATE SESSION<br>
+                    <span style="font-size: 9px; opacity: 0.8;">(Host)</span>
+                </button>
+                <button class="btn primary" onclick="showJoinModal()" style="font-size: 12px; padding: 10px 20px;">
+                    🔗 JOIN SESSION<br>
+                    <span style="font-size: 9px; opacity: 0.8;">(Partner)</span>
+                </button>
+                <button class="btn" onclick="skipSync()" style="font-size: 12px; padding: 10px 20px;">
+                    🎯 SOLO MODE<br>
+                    <span style="font-size: 9px; opacity: 0.8;">(No Sync)</span>
+                </button>
+            </div>
+            <div id="sessionInfo" class="hidden" style="margin-top: 20px; padding: 15px; background: rgba(74, 144, 226, 0.2); border-radius: 8px; border: 2px solid #4a90e2;">
+                <div style="font-size: 13px; color: #4a90e2; margin-bottom: 10px;">📡 SYNC ACTIVE</div>
+                <div style="font-size: 11px; color: #c0c0c0;">Session Code: <span id="sessionCode" style="color: #d4af37; font-weight: bold;"></span></div>
+                <div style="font-size: 10px; color: #888; margin-top: 5px;">Partner Status: <span id="partnerStatus">Waiting...</span></div>
+            </div>
+        </div>
         
         <div style="margin-top: 40px; text-align: center;">
             <button class="btn" onclick="enterTestMode()" style="font-size: 11px; padding: 8px 20px; opacity: 0.7;">🔧 TEST MODE</button>
@@ -48,6 +97,17 @@
             <h1>🤠 OPERATION: DJANGO SALSA 🕵️</h1>
             <div class="codenames">
                 Agent Wildflower 🌸 & The Onion Slayer 🧅
+            </div>
+            <div id="modeIndicator" class="mode-indicator-header" style="margin-top: 10px; font-size: 14px; color: #d4af37;"></div>
+            <div id="versusScores" class="versus-scores hidden" style="margin-top: 10px; display: flex; gap: 20px; justify-content: center;">
+                <div class="player-score">
+                    <span style="color: #4a90e2;">🌸 Agent Wildflower:</span>
+                    <span id="player1Score" style="color: #d4af37; font-weight: bold;">0</span>
+                </div>
+                <div class="player-score">
+                    <span style="color: #e74c3c;">🧅 The Onion Slayer:</span>
+                    <span id="player2Score" style="color: #d4af37; font-weight: bold;">0</span>
+                </div>
             </div>
             <div style="margin-top: 10px;">
                 <button class="btn" onclick="clearSave()" style="font-size: 10px; padding: 5px 12px; opacity: 0.6;">🗑️ Clear Save</button>
@@ -103,24 +163,56 @@
                 <span class="collapse-arrow">▼</span>
             </h3>
             <div class="briefing-content">
-                <ul>
-                    <li>Main Objective Completed: <strong style="color: #7cb342;">+100 points</strong></li>
-                    <li>Mini-Game Completed: <strong style="color: #4a90e2;">+30 points</strong></li>
-                    <li>Side Quest Completed: <strong style="color: #7cb342;">+20 points</strong></li>
-                    <li>Missed Main Objective: <strong style="color: #e74c3c;">-50 points</strong></li>
-                    <li>Reroll Penalty (cumulative): <strong style="color: #e74c3c;">-10, -20, -30 points</strong></li>
-                    <li>Secret Mission Completed: <strong style="color: #4a90e2;">+75 points</strong></li>
-                    <li>Secret Mission Failed: <strong style="color: #e74c3c;">-30 points</strong></li>
-                    <li>Midnight Mission Completed: <strong style="color: #9b59b6;">+40 points</strong></li>
-                </ul>
+                <div style="background: rgba(74, 144, 226, 0.15); padding: 12px; border-radius: 8px; margin-bottom: 15px; border-left: 3px solid #4a90e2;">
+                    <strong style="color: #4a90e2;">📊 SCORING BREAKDOWN</strong>
+                    <div style="font-size: 11px; margin-top: 8px; color: #c0c0c0;">
+                        Per Mission: 1 Main (100pts) + 2 Mini-games (60pts) + 3 Side Quests (60pts) = <strong style="color: #d4af37;">220 pts</strong><br>
+                        5 Missions Total = <strong style="color: #d4af37;">1,100 base points</strong><br>
+                        Secret Mission: <strong style="color: #d4af37;">+75 pts</strong><br>
+                        10 Witching Hour Tasks: <strong style="color: #d4af37;">+400 pts</strong><br>
+                        <strong style="color: #ffd700;">Maximum Possible: 1,575 points</strong>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #7cb342;">✅ EARNING POINTS (CO-OP MODE):</strong>
+                    <ul style="margin-top: 8px;">
+                        <li>Main Objective: <strong style="color: #7cb342;">+100 pts</strong></li>
+                        <li>Mini-Game: <strong style="color: #4a90e2;">+30 pts</strong></li>
+                        <li>Side Quest: <strong style="color: #7cb342;">+20 pts</strong></li>
+                        <li>Secret Mission: <strong style="color: #9b59b6;">+75 pts</strong></li>
+                        <li>Witching Hour Task: <strong style="color: #9b59b6;">+40 pts</strong></li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #e74c3c;">⚔️ VERSUS MODE SCORING:</strong>
+                    <ul style="margin-top: 8px;">
+                        <li>Winner: <strong style="color: #ffd700;">Full points</strong> | Loser: <strong style="color: #888;">Half points</strong></li>
+                        <li>Mini-Game Won: <strong style="color: #7cb342;">+30 pts</strong> (Loser: +15 pts)</li>
+                        <li>Side Quest Won: <strong style="color: #7cb342;">+20 pts</strong> (Loser: +10 pts)</li>
+                        <li>Secret Mission Won: <strong style="color: #9b59b6;">+75 pts</strong> (Loser: +50 pts)</li>
+                        <li>Witching Hour Won: <strong style="color: #9b59b6;">+40 pts</strong> (Loser: +25 pts)</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #e74c3c;">❌ PENALTIES:</strong>
+                    <ul style="margin-top: 8px;">
+                        <li>Missed Main Objective: <strong style="color: #e74c3c;">-50 pts</strong></li>
+                        <li>Reroll (cumulative): <strong style="color: #e74c3c;">-10, -20, -30 pts</strong></li>
+                        <li>Secret Mission Failed: <strong style="color: #e74c3c;">-30 pts</strong> (penalty challenge available)</li>
+                    </ul>
+                </div>
+                
                 <div class="ranks-display">
-                    <strong style="color: #d4af37;">RANK THRESHOLDS:</strong><br>
-                    <div class="rank-item"><span class="rank-name">Rookie Recruits:</span> 0+ points</div>
-                    <div class="rank-item"><span class="rank-name">Capable Operatives:</span> 200+ points</div>
-                    <div class="rank-item"><span class="rank-name">Skilled Agents:</span> 400+ points</div>
-                    <div class="rank-item"><span class="rank-name">Elite Partners:</span> 600+ points</div>
-                    <div class="rank-item"><span class="rank-name">Master Spies:</span> 800+ points</div>
-                    <div class="rank-item"><span class="rank-name">Legendary Partners:</span> 1000+ points</div>
+                    <strong style="color: #d4af37;">🏆 RANK THRESHOLDS:</strong><br>
+                    <div class="rank-item"><span class="rank-name">🏅 Rookie Recruits:</span> 0-199 pts</div>
+                    <div class="rank-item"><span class="rank-name">🥉 Capable Operatives:</span> 200-399 pts</div>
+                    <div class="rank-item"><span class="rank-name">🥈 Skilled Agents:</span> 400-599 pts</div>
+                    <div class="rank-item"><span class="rank-name">🥇 Elite Partners:</span> 600-799 pts</div>
+                    <div class="rank-item"><span class="rank-name">💎 Master Spies:</span> 800-999 pts</div>
+                    <div class="rank-item"><span class="rank-name">👑 Legendary Partners:</span> 1000+ pts</div>
                 </div>
             </div>
         </div>
@@ -174,6 +266,11 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
     <script src="script.js"></script>
 </body>
 </html>
