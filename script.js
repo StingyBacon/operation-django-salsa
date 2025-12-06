@@ -1212,47 +1212,6 @@ const missions = [
     }
 ];
 
-const secretMissions = [
-    {
-        task: "Say 'The Django needs saving' and maintain eye contact for 5 seconds without laughing",
-        timeLimit: 5,
-        points: 75
-    },
-    {
-        task: "Both order drinks in character as 'Agent Wildflower' and 'The Onion Slayer'—the bartender must not break character",
-        timeLimit: 8,
-        points: 75
-    },
-    {
-        task: "Find a way to reference 'nachos' in conversation with a stranger at the bar naturally",
-        timeLimit: 10,
-        points: 75
-    },
-    {
-        task: "Take a photo where you're both doing dramatic spy poses without explaining why to anyone nearby",
-        timeLimit: 3,
-        points: 75
-    },
-    {
-        task: "Challenge each other to a quick dance-off right where you are (minimum 15 seconds each)",
-        timeLimit: 2,
-        points: 75
-    }
-];
-
-const midnightMissions = [
-    { task: "High-five at exactly midnight (or as close as possible)", points: 40 },
-    { task: "Convince a stranger you're both undercover agents on a mission", points: 40 },
-    { task: "Order the weirdest drink combination and both take a sip", points: 40 },
-    { task: "Find someone named 'Nick' or 'Nicole' and tell them they share a name with a spy", points: 40 },
-    { task: "Get a stranger to take a photo of you both in 'spy poses'", points: 40 },
-    { task: "Start a conga line (minimum 3 people)", points: 40 },
-    { task: "Compliment 5 different people in under 5 minutes", points: 40 },
-    { task: "Both drink something while making intense eye contact for 10 seconds", points: 40 },
-    { task: "Discover and remember the bartender's name, then use it 3 times", points: 40 },
-    { task: "Create a secret signal and use it every time you want to kiss for the rest of the night", points: 40 }
-];
-
 const penaltyChallenges = [
     { task: "Share 3 things you appreciate about each other right now", timeLimit: 2 },
     { task: "Take a silly photo together and show it to a stranger for their rating", timeLimit: 3 },
@@ -1279,9 +1238,9 @@ const achievements = [
 ];
 
 // Mode-specific mini games
-const coopMiniGames = {
+const miniGames = {
     1: [
-        "Both predict which Django character will be the other's favorite—reveal after the movie (30 pts if both correct)",
+        "Both predict which Django character will be the other's favorite—reveal after the movie (30 pts)",
         "Invent a signature spy handshake together and demonstrate it perfectly (30 pts)",
         "Capture a candid 'agents in action' photo while cooking—both approve it (30 pts)",
         "Speed teamwork: one chops, one stirs, swap roles midway without dropping pace (30 pts)",
@@ -1317,45 +1276,7 @@ const coopMiniGames = {
     ]
 };
 
-const versusMiniGames = {
-    1: [
-        "Speed challenge: first to finish prepping their assigned ingredient wins (30 pts winner, 15 pts loser)",
-        "Cooking duel: who makes the better garnish for the nachos? (30 pts winner, 15 pts loser)",
-        "Taste test duel: correctly identify more ingredients than your opponent (30 pts winner, 15 pts loser)",
-        "Speed handshake: create your own faster than your partner (30 pts winner, 15 pts loser)",
-        "Photo contest: take a better 'agent in action' shot (30 pts winner, 15 pts loser)"
-    ],
-    2: [
-        "Django trivia duel: most correct predictions about the movie wins (30 pts winner, 15 pts loser)",
-        "Western quote-off: who can quote more westerns? (30 pts winner, 15 pts loser)",
-        "Nacho rating debate: convince an imaginary judge your rating is better (30 pts winner, 15 pts loser)",
-        "Pose competition: best Django recreation (30 pts winner, 15 pts loser)",
-        "Nickname battle: create a cooler western name (30 pts winner, 15 pts loser)"
-    ],
-    3: [
-        "Quote accuracy contest: who delivers Django lines better? (30 pts winner, 15 pts loser)",
-        "Prediction duel: most accurate scene predictions (30 pts winner, 15 pts loser)",
-        "Bingo race: complete a row faster than your opponent (30 pts winner, 15 pts loser)",
-        "Drawl showdown: best cowboy accent wins (30 pts winner, 15 pts loser)",
-        "Django count: closest to the actual count wins (30 pts winner, 15 pts loser)"
-    ],
-    4: [
-        "20 Questions race: solve it in fewer questions (30 pts winner, 15 pts loser)",
-        "Story battle: create a better stranger backstory (30 pts winner, 15 pts loser)",
-        "People-watching contest: most correct guesses wins (30 pts winner, 15 pts loser)",
-        "Confessional contest: funniest awkward moment wins (30 pts winner, 15 pts loser)",
-        "Prediction duel: more accurate arcade predictions (30 pts winner, 15 pts loser)"
-    ],
-    5: [
-        "Arcade tournament: win more games (30 pts per win)",
-        "High score battle: beat each other's best score (30 pts winner, 15 pts loser)",
-        "Speed run: complete a game faster (30 pts winner, 15 pts loser)",
-        "Victory pose-off: better celebration wins (30 pts winner, 15 pts loser)",
-        "Drink ordering contest: cooler spy drink order (30 pts winner, 15 pts loser)"
-    ]
-};
-
-const coopSideQuests = {
+const sideQuests = {
     1: [
         "Share the best and worst parts of your day with each other (20 pts)",
         "Exchange songs and both explain why you love them (20 pts)",
@@ -1402,55 +1323,8 @@ const coopSideQuests = {
     ]
 };
 
-const versusSideQuests = {
-    1: [
-        "Better storytelling: who tells the better day recap? (20 pts winner, 10 pts loser)",
-        "Song battle: whose song choice is superior? (20 pts winner, 10 pts loser)",
-        "Cooking tutorial: who teaches the better trick? (20 pts winner, 10 pts loser)",
-        "Compliment quality: who gives the better compliment? (20 pts winner, 10 pts loser)",
-        "Craving creativity: whose food craving is more ridiculous? (20 pts winner, 10 pts loser)",
-        "Reenactment showdown: who's the better actor? (20 pts winner, 10 pts loser)",
-        "Dream meal contest: whose sounds more delicious? (20 pts winner, 10 pts loser)"
-    ],
-    2: [
-        "Toast eloquence: better toast wins (20 pts winner, 10 pts loser)",
-        "First impression: more insightful movie take (20 pts winner, 10 pts loser)",
-        "Memory lane: better shared meal story (20 pts winner, 10 pts loser)",
-        "Critique quality: more detailed food compliment (20 pts winner, 10 pts loser)",
-        "Character prediction: more accurate favorite (20 pts winner, 10 pts loser)",
-        "Enthusiasm contest: more excited about the night (20 pts winner, 10 pts loser)"
-    ],
-    3: [
-        "Reaction intensity: bigger plot twist reaction (20 pts winner, 10 pts loser)",
-        "Movie analysis: deeper favorite moments discussion (20 pts winner, 10 pts loser)",
-        "Tarantino debate: better argument wins (20 pts winner, 10 pts loser)",
-        "Planning skills: better next movie date idea (20 pts winner, 10 pts loser)",
-        "Recommendation quality: better movie suggestion (20 pts winner, 10 pts loser)",
-        "Villain analysis: more compelling favorite villain (20 pts winner, 10 pts loser)",
-        "Personal connection: better scene-to-life story (20 pts winner, 10 pts loser)"
-    ],
-    4: [
-        "Question mastery: ask better 20 Questions (20 pts winner, 10 pts loser)",
-        "Storytelling: create a more entertaining backstory (20 pts winner, 10 pts loser)",
-        "Observation skills: spot more first-date couples (20 pts winner, 10 pts loser)",
-        "Fun fact contest: share a more interesting fact (20 pts winner, 10 pts loser)",
-        "Adventure planning: pitch a better destination (20 pts winner, 10 pts loser)",
-        "Compliment battle: give the better compliment (20 pts winner, 10 pts loser)",
-        "Nostalgia contest: better arcade memory (20 pts winner, 10 pts loser)"
-    ],
-    5: [
-        "Wager creativity: make more interesting bets (20 pts winner, 10 pts loser)",
-        "Gaming prowess: demonstrate superior skills (20 pts winner, 10 pts loser)",
-        "Drink selection: order the cooler beverage (20 pts winner, 10 pts loser)",
-        "Atmosphere reading: better venue vibe analysis (20 pts winner, 10 pts loser)",
-        "Travel pitch: more appealing destination description (20 pts winner, 10 pts loser)",
-        "Detective skills: identify more first-daters (20 pts winner, 10 pts loser)",
-        "Courage contest: try the more unusual game (20 pts winner, 10 pts loser)"
-    ]
-};
-
-// Mode-specific secret missions
-const coopSecretMissions = [
+// Secret missions
+const secretMissions = [
     {
         task: "Both say 'The Django needs saving' in perfect unison while maintaining eye contact for 5 seconds without laughing",
         timeLimit: 5,
@@ -1478,41 +1352,8 @@ const coopSecretMissions = [
     }
 ];
 
-const versusSecretMissions = [
-    {
-        task: "Race to say 'The Django needs saving' first and maintain eye contact without laughing longer",
-        timeLimit: 5,
-        points: 75,
-        versusPoints: 50
-    },
-    {
-        task: "Order drinks in character—whoever stays in character longer without breaking wins",
-        timeLimit: 8,
-        points: 75,
-        versusPoints: 50
-    },
-    {
-        task: "Race to naturally reference 'nachos' to a stranger first—smoothest integration wins",
-        timeLimit: 10,
-        points: 75,
-        versusPoints: 50
-    },
-    {
-        task: "Separate spy pose competition—who takes the better dramatic photo?",
-        timeLimit: 3,
-        points: 75,
-        versusPoints: 50
-    },
-    {
-        task: "Dance-off battle—who has the better moves? (15 seconds each)",
-        timeLimit: 2,
-        points: 75,
-        versusPoints: 50
-    }
-];
-
-// Mode-specific midnight missions
-const coopMidnightMissions = [
+// Midnight missions
+const midnightMissions = [
     { task: "Execute a perfect synchronized high-five at exactly midnight", points: 40 },
     { task: "Team up to convince a stranger you're both undercover agents", points: 40 },
     { task: "Together order and share the weirdest drink combination", points: 40 },
@@ -1523,19 +1364,6 @@ const coopMidnightMissions = [
     { task: "Drink something together while maintaining mutual eye contact for 10 seconds", points: 40 },
     { task: "Discover the bartender's name together and both use it 3 times", points: 40 },
     { task: "Create and demonstrate your secret kiss signal to each other", points: 40 }
-];
-
-const versusMidnightMissions = [
-    { task: "Race to high-five at exactly midnight—closest to perfect timing wins", points: 40, versusPoints: 25 },
-    { task: "Competition: who convinces a stranger better that they're an undercover agent?", points: 40, versusPoints: 25 },
-    { task: "Order weird drinks—whose is more bizarre/adventurous?", points: 40, versusPoints: 25 },
-    { task: "Race to find someone named 'Nick' or 'Nicole' first", points: 40, versusPoints: 25 },
-    { task: "Separate spy pose photos—whose gets the better rating from a stranger?", points: 40, versusPoints: 25 },
-    { task: "Who can get more people to join their conga line?", points: 40, versusPoints: 25 },
-    { task: "Race to compliment 5 people first (both must complete for points)", points: 40, versusPoints: 25 },
-    { task: "Staring contest with drinks—who maintains eye contact longer?", points: 40, versusPoints: 25 },
-    { task: "Race to learn the bartender's name and use it 3 times first", points: 40, versusPoints: 25 },
-    { task: "Create the most creative secret kiss signal—demonstrate for judging", points: 40, versusPoints: 25 }
 ];
 
 const ranks = [
@@ -2597,7 +2425,16 @@ function checkAchievements(missionId) {
 }
 
 function addScore(points) {
-    gameState.totalScore += points;
+    if (gameState.gameMode === 'coop') {
+        // In co-op mode, add to totalScore directly
+        gameState.totalScore += points;
+    } else if (gameState.gameMode === 'versus') {
+        // In versus mode, total is sum of individual scores
+        gameState.totalScore = gameState.player1Score + gameState.player2Score;
+    } else {
+        // No mode selected (shouldn't happen, but fallback)
+        gameState.totalScore += points;
+    }
     updateProgressBar();
     saveGameState();
 }
@@ -2871,31 +2708,19 @@ function addPoints(points, player = null) {
 }
 
 function getMiniGamesForMission(missionId) {
-    if (gameState.gameMode === 'versus') {
-        return versusMiniGames[missionId] || [];
-    }
-    return coopMiniGames[missionId] || [];
+    return miniGames[missionId] || [];
 }
 
 function getSideQuestsForMission(missionId) {
-    if (gameState.gameMode === 'versus') {
-        return versusSideQuests[missionId] || [];
-    }
-    return coopSideQuests[missionId] || [];
+    return sideQuests[missionId] || [];
 }
 
 function getSecretMissionsForMode() {
-    if (gameState.gameMode === 'versus') {
-        return versusSecretMissions;
-    }
-    return coopSecretMissions;
+    return secretMissions;
 }
 
 function getMidnightMissionsForMode() {
-    if (gameState.gameMode === 'versus') {
-        return versusMidnightMissions;
-    }
-    return coopMidnightMissions;
+    return midnightMissions;
 }
 
 function completeVersusTask(taskType, points, winnerPlayer) {
